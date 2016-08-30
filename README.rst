@@ -1,8 +1,8 @@
 #########################################################################
-PyWiWi (Python Windows Wifi)
+win32wifi (Python Windows Wifi)
 #########################################################################
 
-PyWiWi is a set of Python bindings for the Windows Native Wifi API.
+win32wifi is a set of Python bindings for the Windows Native Wifi API.
 
 The Native Wifi API is designed for C/C++ developers. Programmers should be
 familiar with wireless networking concepts and terminology.
@@ -10,7 +10,8 @@ familiar with wireless networking concepts and terminology.
 Authors
 ==============
 
-Andres Blanco (6e726d)
+Andres Blanco 	(6e726d)
+Shaked Gitelman (almondg)
 
 License
 ==============

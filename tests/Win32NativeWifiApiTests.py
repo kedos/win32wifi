@@ -31,7 +31,7 @@ from ctypes import addressof
 from Win32NativeWifiApi import *
 
 
-class TestWindowsNativeWifiApi(unittest.TestCase):
+class TestWin32NativeWifiApi(unittest.TestCase):
 
     def testWlanOpenHandleWlanCloseHandleSuccess(self):
         handle = WlanOpenHandle()

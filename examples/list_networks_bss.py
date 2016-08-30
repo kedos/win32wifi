@@ -1,7 +1,7 @@
-# PyWiWi - Windows Native Wifi Api Python library.
-# Copyright (C) 2013 - Andres Blanco
+# win32wifi - Windows Native Wifi Api Python library.
+# Copyright (C) 2016 - Shaked Gitelman
 #
-# This file is part of PyWiWi
+# Forked from: PyWiWi - <https://github.com/6e726d/PyWiWi>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,20 +16,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Andres Blanco (6e726d) <6e726d@gmail.com>
+# Author: Andres Blanco     (6e726d)    <6e726d@gmail.com>
+# Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
 
-from WindowsWifi import getWirelessInterfaces
-from WindowsWifi import getWirelessNetworkBssList
+import sys
+
+sys.path.append('../')
+
+from Win32Wifi import getWirelessInterfaces
+from Win32Wifi import getWirelessNetworkBssList
 
 if __name__ == "__main__":
     ifaces = getWirelessInterfaces()
     for iface in ifaces:
-        print iface
+        print(iface)
         guid = iface.guid
         bsss = getWirelessNetworkBssList(iface)
-        print ""
+        print()
         for bss in bsss:
-            print bss
-            print "-" * 20
-        print ""
+            print(bss)
+            print("-" * 20)
+        print()

@@ -211,9 +211,11 @@ def getWirelessAvailableNetworkList(wireless_interface):
     num = network_list.contents.NumberOfItems
     network_pointer = addressof(network_list.contents.Network)
     networks_list = (data_type * num).from_address(network_pointer)
+    
     for network in networks_list:
         networks.append(WirelessNetwork(network))
-    WlanFreeMemory(networks_list)
+    
+    WlanFreeMemory(network_list)
     WlanCloseHandle(handle)
     return networks
 
