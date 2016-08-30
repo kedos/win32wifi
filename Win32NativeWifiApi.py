@@ -1,7 +1,7 @@
-# PyWiWi - Windows Native Wifi Api Python library.
-# Copyright (C) 2013 - Andres Blanco
+# win32wifi - Windows Native Wifi Api Python library.
+# Copyright (C) 2016 - Shaked Gitelman
 #
-# This file is part of PyWiWi
+# Forked from: PyWiWi - <https://github.com/6e726d/PyWiWi>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author: Andres Blanco (6e726d)     <6e726d@gmail.com>
+# Author: Andres Blanco     (6e726d)    <6e726d@gmail.com>
+# Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
 
 from ctypes import *
@@ -64,8 +65,12 @@ DOT11_BSS_TYPE = c_uint
 DOT11_BSS_TYPE_DICT_KV = {1: "dot11_BSS_type_infrastructure",
                        2: "dot11_BSS_type_independent",
                        3: "dot11_BSS_type_any"}
-DOT11_BSS_TYPE_DICT_VK = { v: k for k, v in
-        DOT11_BSS_TYPE_DICT_KV.iteritems() }
+try:
+    DOT11_BSS_TYPE_DICT_VK = { v: k for k, v in
+            DOT11_BSS_TYPE_DICT_KV.items() }
+except AttributeError:
+    DOT11_BSS_TYPE_DICT_VK = { v: k for k, v in
+            DOT11_BSS_TYPE_DICT_KV.iteritems() }    
 
 # The DOT11_PHY_TYPE enumeration defines an 802.11 PHY and media type.
 DOT11_PHY_TYPE = c_uint
@@ -640,8 +645,12 @@ WLAN_CONNECTION_MODE_KV = {0: "wlan_connection_mode_profile",
                            3: "wlan_connection_mode_discovery_unsecure",
                            4: "wlan_connection_mode_auto",
                            5: "wlan_connection_mode_invalid"}
-WLAN_CONNECTION_MODE_VK = { v: k for k, v in
-        WLAN_CONNECTION_MODE_KV.iteritems() }
+try:
+    WLAN_CONNECTION_MODE_VK = { v: k for k, v in
+            WLAN_CONNECTION_MODE_KV.items() }
+except AttributeError:
+    WLAN_CONNECTION_MODE_VK = { v: k for k, v in
+            WLAN_CONNECTION_MODE_KV.iteritems() }
 
 class NDIS_OBJECT_HEADER(Structure):
     """
