@@ -250,10 +250,16 @@ def getWirelessProfiles(wireless_interface):
                                   profile.ProfileName)
         profiles.append(WirelessProfile(profile, xml_data.value))
     WlanFreeMemory(xml_data)
-    WlanFreeMemory(profiles_list)
+    WlanFreeMemory(profile_list)
     WlanCloseHandle(handle)
     return profiles
 
+def deleteProfile(wireless_interface, profile_name):
+    handle = WlanOpenHandle()
+    result = WlanDeleteProfile(handle, wireless_interface.guid, profile_name)
+    WlanCloseHandle(handle)
+
+    return result
 
 def disconnect(wireless_interface):
     """
@@ -262,6 +268,7 @@ def disconnect(wireless_interface):
     WlanDisconnect(handle, wireless_interface.guid)
     WlanCloseHandle(handle)
 
+# TODO(shaked): There is an error 87 when trying to connect to a wifi network.
 def connect(wireless_interface, connection_params):
     """
         The WlanConnect function attempts to connect to a specific network.
@@ -319,13 +326,13 @@ def connect(wireless_interface, connection_params):
     if connection_params["bssidList"] is not None:
         bssids = []
         for bssidish in connection_params["bssidList"]:
-            bssidish = tuple(int(n, 16) for n in bssidish.split(":"))
+            bssidish = tuple(int(n, 16) for n in bssidish.split(b":"))
             bssids.append((DOT11_MAC_ADDRESS)(*bssidish))
         bssidListEntries = c_ulong(len(bssids))
         bssids = (DOT11_MAC_ADDRESS * len(bssids))(*bssids)
         bssidListHeader = NDIS_OBJECT_HEADER()
-        bssidListHeader.Type = chr(NDIS_OBJECT_TYPE_DEFAULT)
-        bssidListHeader.Revision = chr(DOT11_BSSID_LIST_REVISION_1) # chr()
+        bssidListHeader.Type = NDIS_OBJECT_TYPE_DEFAULT
+        bssidListHeader.Revision = DOT11_BSSID_LIST_REVISION_1 # chr()
         bssidListHeader.Size = c_ushort(sizeof(DOT11_BSSID_LIST))
         bssidList = DOT11_BSSID_LIST()
         bssidList.Header = bssidListHeader
@@ -341,6 +348,7 @@ def connect(wireless_interface, connection_params):
     cnxp.dot11BssType = DOT11_BSS_TYPE(bssType)
     # flags
     cnxp.dwFlags = DWORD(connection_params["flags"])
+    print(cnxp)
     result = WlanConnect(handle,
                 wireless_interface.guid,
                 cnxp)

@@ -62,15 +62,17 @@ DOT11_MAC_ADDRESS = c_ubyte * 6
 # The DOT11_BSS_TYPE enumerated type defines a basic service set (BSS) network
 # type.
 DOT11_BSS_TYPE = c_uint
-DOT11_BSS_TYPE_DICT_KV = {1: "dot11_BSS_type_infrastructure",
-                       2: "dot11_BSS_type_independent",
-                       3: "dot11_BSS_type_any"}
+DOT11_BSS_TYPE_DICT_KV = {
+                           1: "dot11_BSS_type_infrastructure",
+                           2: "dot11_BSS_type_independent",
+                           3: "dot11_BSS_type_any"
+                         }
 try:
     DOT11_BSS_TYPE_DICT_VK = { v: k for k, v in
             DOT11_BSS_TYPE_DICT_KV.items() }
 except AttributeError:
     DOT11_BSS_TYPE_DICT_VK = { v: k for k, v in
-            DOT11_BSS_TYPE_DICT_KV.iteritems() }    
+            DOT11_BSS_TYPE_DICT_KV.items() }    
 
 # The DOT11_PHY_TYPE enumeration defines an 802.11 PHY and media type.
 DOT11_PHY_TYPE = c_uint
@@ -637,6 +639,22 @@ def WlanGetProfile(hClientHandle, pInterfaceGuid, profileName):
     if result != ERROR_SUCCESS:
         raise Exception("WlanGetProfile failed.")
     return xml
+
+def WlanDeleteProfile(hClientHandle, pInterfaceGuid, profileName):
+    func_ref = wlanapi.WlanDeleteProfile
+    func_ref.argtypes = [HANDLE,
+                         POINTER(GUID),
+                         LPCWSTR,
+                         c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle,
+                      byref(pInterfaceGuid),
+                      profileName,
+                      None)
+    if result != ERROR_SUCCESS:
+        raise Exception("WlanDeleteProfile failed. error %d" % result, result)
+    return result    
+    
 
 WLAN_CONNECTION_MODE = c_uint
 WLAN_CONNECTION_MODE_KV = {0: "wlan_connection_mode_profile",
