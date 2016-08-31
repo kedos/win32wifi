@@ -84,6 +84,7 @@ DOT11_PHY_TYPE_DICT = {0: "dot11_phy_type_unknown",
                        5: "dot11_phy_type_hrdsss",
                        6: "dot11_phy_type_erp",
                        7: "dot11_phy_type_ht",
+                       8: "dot11_phy_type_vht",
                        0x80000000: "dot11_phy_type_IHV_start",
                        0xffffffff: "dot11_phy_type_IHV_end"}
 

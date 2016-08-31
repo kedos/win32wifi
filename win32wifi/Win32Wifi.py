@@ -363,6 +363,7 @@ def queryInterface(wireless_interface, opcode_item):
     """
     handle = WlanOpenHandle()
     opcode_item_ext = "".join(["wlan_intf_opcode_", opcode_item])
+    opcode = None
     for key, val in WLAN_INTF_OPCODE_DICT.items():
         if val == opcode_item_ext:
             opcode = WLAN_INTF_OPCODE(key)
