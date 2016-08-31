@@ -22,7 +22,7 @@
 
 from ctypes import *
 from comtypes import GUID
-from Win32NativeWifiApi import *
+from win32wifi.Win32NativeWifiApi import *
 
 NULL = None
 
