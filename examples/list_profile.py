@@ -20,12 +20,8 @@
 # Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
 
-import sys
-
-sys.path.append('../')
-
-from Win32Wifi import getWirelessInterfaces
-from Win32Wifi import getWirelessProfiles
+from win32wifi.Win32Wifi import getWirelessInterfaces
+from win32wifi.Win32Wifi import getWirelessProfiles
 
 if __name__ == "__main__":
     ifaces = getWirelessInterfaces()
@@ -35,7 +31,7 @@ if __name__ == "__main__":
         profiles = getWirelessProfiles(iface)
         print(profiles)
         for profile in profiles:
-            if profile.name == "liron_ofir":
+            if profile.name == "Pretty Fly for a WiFi":
                 print("Deleting profile (%s)" % profile.name)
             print(profile.name)
             # print(profile)
