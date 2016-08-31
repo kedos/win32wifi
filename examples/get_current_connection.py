@@ -1,8 +1,6 @@
 # win32wifi - Windows Native Wifi Api Python library.
 # Copyright (C) 2016 - Shaked Gitelman
 #
-# Forked from: PyWiWi - <https://github.com/6e726d/PyWiWi>
-#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
@@ -35,6 +33,5 @@ if __name__ == "__main__":
     for iface in ifaces:
         guid = iface.guid
         res = queryInterface(iface, "current_connection")  # wlan_intf_opcode_current_connection
-        print(res[0])
         pp.pprint(res[1])
         
