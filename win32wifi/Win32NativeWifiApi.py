@@ -379,6 +379,78 @@ class WLAN_PROFILE_INFO_LIST(Structure):
                 ("Index", DWORD),
                 ("ProfileInfo", WLAN_PROFILE_INFO * 1)]
 
+class WLAN_NOTIFICATION_DATA(Structure):
+    """
+        The WLAN_NOTIFICATION_DATA structure contains information provided 
+        when receiving notifications.
+
+        typedef struct _WLAN_NOTIFICATION_DATA {
+          DWORD NotificationSource;
+          DWORD NotificationCode;
+          GUID  InterfaceGuid;
+          DWORD dwDataSize;
+          PVOID pData;
+        } WLAN_NOTIFICATION_DATA, *PWLAN_NOTIFICATION_DATA;
+    """ 
+    _fields_ = [("NotificationSource", DWORD),
+                ("NotificationCode", DWORD),
+                ("InterfaceGuid", GUID),
+                ("dwDataSize", DWORD),
+                ("pData", c_void_p)]
+
+class WLAN_NOTIFICATION_CALLBACK():
+    """
+        The WLAN_NOTIFICATION_CALLBACK allback function prototype defines 
+        the type of notification callback function.
+
+        typedef VOID ( WINAPI *WLAN_NOTIFICATION_CALLBACK)(
+           PWLAN_NOTIFICATION_DATA data,
+           PVOID                   context
+        );
+    """
+    _fields_ = [("data", WLAN_NOTIFICATION_DATA),
+                ("context", c_void_p)]
+
+def WlanRegisterNotification(hClientHandle):
+    """
+        The WlanRegisterNotification function is used to register and 
+        unregister notifications on all wireless interfaces.
+
+        DWORD WINAPI WlanRegisterNotification(
+          _In_       HANDLE                      hClientHandle,
+          _In_       DWORD                       dwNotifSource,
+          _In_       BOOL                        bIgnoreDuplicate,
+          _In_opt_   WLAN_NOTIFICATION_CALLBACK  funcCallback,
+          _In_opt_   PVOID                       pCallbackContext,
+          _Reserved_ PVOID                       pReserved,
+          _Out_opt_  PDWORD                      pdwPrevNotifSource
+        );
+    """
+    func_ref = wlanapi.WlanOpenHandle
+    func_ref.argtypes = [
+        HANDLE, 
+        DWORD,
+        BOOL,
+        WLAN_NOTIFICATION_CALLBACK,
+        c_void_p,
+        c_void_p,
+        POINTER(DWORD)]
+    func_ref.restype = DWORD
+
+    dwNotifSource = None
+    bIgnoreDuplicate = True
+    funcCallback = None
+    pCallbackContext = None
+    pdwPrevNotifSource = None
+
+    result = func_ref(hClientHandle, 
+                      dwNotifSource, 
+                      bIgnoreDuplicate, 
+                      funcCallback, 
+                      pCallbackContext, 
+                      None, 
+                      pdwPrevNotifSource)
+
 
 def WlanOpenHandle():
     """
