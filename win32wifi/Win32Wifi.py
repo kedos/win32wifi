@@ -21,6 +21,8 @@
 #
 
 from ctypes import *
+import time
+
 from comtypes import GUID
 from win32wifi.Win32NativeWifiApi import *
 
@@ -410,3 +412,18 @@ def queryInterface(wireless_interface, opcode_item):
         ext_out = None
     return result.contents, ext_out
 
+def WlanNotification(wlan_notification_data, p):
+    print("Received WlanNotification")
+    print(wlan_notification_data)
+    print(p)
+
+    return None
+
+def registerNotification():
+    handle = WlanOpenHandle()
+    callback = WlanNotification
+
+    rc = WlanRegisterNotification(handle, callback)
+    
+    while True:
+        time.sleep(0)

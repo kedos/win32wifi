@@ -144,6 +144,10 @@ WLAN_PROFILE_GROUP_POLICY = 0x00000001
 WLAN_PROFILE_USER = 0x00000002
 WLAN_PROFILE_GET_PLAINTEXT_KEY = 0x00000004
 
+# WLAN Notification Registration Flags
+WLAN_NOTIFICATION_SOURCE_ALL = 0x0000ffff
+WLAN_NOTIFICATION_SOURCE_ACM = 0x00000008
+
 
 class WLAN_INTERFACE_INFO(Structure):
     """
@@ -408,10 +412,10 @@ class WLAN_NOTIFICATION_CALLBACK():
            PVOID                   context
         );
     """
-    _fields_ = [("data", WLAN_NOTIFICATION_DATA),
+    _fields_ = [("data", POINTER(WLAN_NOTIFICATION_DATA)),
                 ("context", c_void_p)]
 
-def WlanRegisterNotification(hClientHandle):
+def WlanRegisterNotification(hClientHandle, callback):
     """
         The WlanRegisterNotification function is used to register and 
         unregister notifications on all wireless interfaces.
@@ -426,7 +430,9 @@ def WlanRegisterNotification(hClientHandle):
           _Out_opt_  PDWORD                      pdwPrevNotifSource
         );
     """
-    func_ref = wlanapi.WlanOpenHandle
+    WLAN_NOTIFICATION_CALLBACK = CFUNCTYPE(None, POINTER(WLAN_NOTIFICATION_DATA), c_void_p, use_last_error=True)
+
+    func_ref = wlanapi.WlanRegisterNotification
     func_ref.argtypes = [
         HANDLE, 
         DWORD,
@@ -437,19 +443,24 @@ def WlanRegisterNotification(hClientHandle):
         POINTER(DWORD)]
     func_ref.restype = DWORD
 
-    dwNotifSource = None
+    dwNotifSource = WLAN_NOTIFICATION_SOURCE_ALL
     bIgnoreDuplicate = True
-    funcCallback = None
+    funcCallback = WLAN_NOTIFICATION_CALLBACK(callback)
     pCallbackContext = None
     pdwPrevNotifSource = None
 
-    result = func_ref(hClientHandle, 
+    result = func_ref(hClientHandle,
                       dwNotifSource, 
                       bIgnoreDuplicate, 
                       funcCallback, 
                       pCallbackContext, 
                       None, 
                       pdwPrevNotifSource)
+
+    if result != ERROR_SUCCESS:
+        raise WinError(result)
+
+    return funcCallback
 
 
 def WlanOpenHandle():
