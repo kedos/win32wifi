@@ -21,6 +21,7 @@
 #
 
 from ctypes import *
+from enum import Enum
 import time
 
 from comtypes import GUID
@@ -383,41 +384,127 @@ def queryInterface(wireless_interface, opcode_item):
         strProfileName = r.strProfileName
         aa = r.wlanAssociationAttributes
         wlanAssociationAttributes = {
-                "dot11Ssid": aa.dot11Ssid.SSID,
-                "dot11BssType": DOT11_BSS_TYPE_DICT_KV[aa.dot11BssType],
-                "dot11Bssid": dot11bssid_to_string(aa.dot11Bssid),
-                "dot11PhyType": DOT11_PHY_TYPE_DICT[aa.dot11PhyType],
-                "uDot11PhyIndex": c_long(aa.uDot11PhyIndex).value,
-                "wlanSignalQuality": c_long(aa.wlanSignalQuality).value,
-                "ulRxRate": c_long(aa.ulRxRate).value,
-                "ulTxRate": c_long(aa.ulTxRate).value
-                }
+            "dot11Ssid": aa.dot11Ssid.SSID,
+            "dot11BssType": DOT11_BSS_TYPE_DICT_KV[aa.dot11BssType],
+            "dot11Bssid": dot11bssid_to_string(aa.dot11Bssid),
+            "dot11PhyType": DOT11_PHY_TYPE_DICT[aa.dot11PhyType],
+            "uDot11PhyIndex": c_long(aa.uDot11PhyIndex).value,
+            "wlanSignalQuality": c_long(aa.wlanSignalQuality).value,
+            "ulRxRate": c_long(aa.ulRxRate).value,
+            "ulTxRate": c_long(aa.ulTxRate).value,
+        }
         sa = r.wlanSecurityAttributes
         wlanSecurityAttributes = {
-                "bSecurityEnabled": sa.bSecurityEnabled,
-                "bOneXEnabled": sa.bOneXEnabled,
-                "dot11AuthAlgorithm": \
-                        DOT11_AUTH_ALGORITHM_DICT[sa.dot11AuthAlgorithm],
-                "dot11CipherAlgorithm": \
-                        DOT11_CIPHER_ALGORITHM_DICT[sa.dot11CipherAlgorithm]
-                }
+            "bSecurityEnabled": sa.bSecurityEnabled,
+            "bOneXEnabled": sa.bOneXEnabled,
+            "dot11AuthAlgorithm": DOT11_AUTH_ALGORITHM_DICT[sa.dot11AuthAlgorithm],
+            "dot11CipherAlgorithm": DOT11_CIPHER_ALGORITHM_DICT[sa.dot11CipherAlgorithm],
+        }
         ext_out = {
-                "isState": isState,
-                "wlanConnectionMode": wlanConnectionMode,
-                "strProfileName": strProfileName,
-                "wlanAssociationAttributes": wlanAssociationAttributes,
-                "wlanSecurityAttributes": wlanSecurityAttributes
-                }
+            "isState": isState,
+            "wlanConnectionMode": wlanConnectionMode,
+            "strProfileName": strProfileName,
+            "wlanAssociationAttributes": wlanAssociationAttributes,
+            "wlanSecurityAttributes": wlanSecurityAttributes,
+        }
     else:
         ext_out = None
     return result.contents, ext_out
 
-def WlanNotification(wlan_notification_data, p):
-    print("Received WlanNotification")
-    print(wlan_notification_data)
-    print(p)
+class _ONEX_NOTIFICATION_TYPE(Enum):
+    OneXPublicNotificationBase          = 0
+    OneXNotificationTypeResultUpdate    = 1
+    OneXNotificationTypeAuthRestarted   = 2
+    OneXNotificationTypeEventInvalid    = 3
+    OneXNumNotifications                = OneXNotificationTypeEventInvalid
 
-    return None
+class _WLAN_NOTIFICATION_ACM(Enum):
+    wlan_notification_acm_start                         = 0
+    wlan_notification_acm_autoconf_enabled              = 1
+    wlan_notification_acm_autoconf_disabled             = 2
+    wlan_notification_acm_background_scan_enabled       = 3
+    wlan_notification_acm_background_scan_disabled      = 4
+    wlan_notification_acm_bss_type_change               = 5
+    wlan_notification_acm_power_setting_change          = 6
+    wlan_notification_acm_scan_complete                 = 7
+    wlan_notification_acm_scan_fail                     = 8
+    wlan_notification_acm_connection_start              = 9
+    wlan_notification_acm_connection_complete           = 10
+    wlan_notification_acm_connection_attempt_fail       = 11
+    wlan_notification_acm_filter_list_change            = 12
+    wlan_notification_acm_interface_arrival             = 13
+    wlan_notification_acm_interface_removal             = 14
+    wlan_notification_acm_profile_change                = 15
+    wlan_notification_acm_profile_name_change           = 16
+    wlan_notification_acm_profiles_exhausted            = 17
+    wlan_notification_acm_network_not_available         = 18
+    wlan_notification_acm_network_available             = 19
+    wlan_notification_acm_disconnecting                 = 20
+    wlan_notification_acm_disconnected                  = 21
+    wlan_notification_acm_adhoc_network_state_change    = 22
+    wlan_notification_acm_profile_unblocked             = 23
+    wlan_notification_acm_screen_power_change           = 24
+    wlan_notification_acm_profile_blocked               = 25
+    wlan_notification_acm_scan_list_refresh             = 26
+    wlan_notification_acm_end                           = 27
+
+class _WLAN_NOTIFICATION_MSM(Enum):
+    wlan_notification_msm_start                         = 0
+    wlan_notification_msm_associating                   = 1 
+    wlan_notification_msm_associated                    = 2
+    wlan_notification_msm_authenticating                = 3
+    wlan_notification_msm_connected                     = 4
+    wlan_notification_msm_roaming_start                 = 5
+    wlan_notification_msm_roaming_end                   = 6
+    wlan_notification_msm_radio_state_change            = 7
+    wlan_notification_msm_signal_quality_change         = 8
+    wlan_notification_msm_disassociating                = 9
+    wlan_notification_msm_disconnected                  = 10
+    wlan_notification_msm_peer_join                     = 11
+    wlan_notification_msm_peer_leave                    = 12
+    wlan_notification_msm_adapter_removal               = 13
+    wlan_notification_msm_adapter_operation_mode_change = 14
+    wlan_notification_msm_end                           = 15
+
+class _WLAN_HOSTED_NETWORK_NOTIFICATION_CODE(Enum):
+    wlan_hosted_network_state_change        = 4096
+    wlan_hosted_network_peer_state_change   = 4097
+    wlan_hosted_network_radio_state_change  = 4098
+
+def WlanNotification(wlan_notification_data, p):
+    data = wlan_notification_data.contents
+    """
+    typedef struct _WLAN_NOTIFICATION_DATA {
+        DWORD NotificationSource;
+        DWORD NotificationCode;
+        GUID  InterfaceGuid;
+        DWORD dwDataSize;
+        PVOID pData;
+    }
+    """
+
+    notification_sources = {
+        0x0000: ("WLAN_NOTIFICATION_SOURCE_NONE", None),
+        0x0004: ("WLAN_NOTIFICATION_SOURCE_ONEX", _ONEX_NOTIFICATION_TYPE),
+        0x0008: ("WLAN_NOTIFICATION_SOURCE_ACM", _WLAN_NOTIFICATION_ACM),
+        0x0010: ("WLAN_NOTIFICATION_SOURCE_MSM", _WLAN_NOTIFICATION_MSM),
+        0x0020: ("WLAN_NOTIFICATION_SOURCE_SECURITY", None),
+        0x0040: ("WLAN_NOTIFICATION_SOURCE_IHV", None),
+        0x0080: ("WLAN_NOTIFICATION_SOURCE_HNWK", _WLAN_HOSTED_NETWORK_NOTIFICATION_CODE),
+        0xffff: ("WLAN_NOTIFICATION_SOURCE_ALL", _ONEX_NOTIFICATION_TYPE),
+    }
+
+    if data.NotificationSource not in notification_sources:
+        print("WARNING: Got Unknown Notification Source - %d" % data.NotificationSource)
+        return 
+
+    types = notification_sources[data.NotificationSource]
+
+    if types[1] != None:
+        try:
+            print(types[1](data.NotificationCode))
+        except:
+            print("WARNING: Got Unknown Notification Code (%d) for %s" % (data.NotificationCode, types[0]ש))
 
 def registerNotification():
     handle = WlanOpenHandle()
