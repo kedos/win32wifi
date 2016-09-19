@@ -1,6 +1,5 @@
-from setuptools import setup
 from os import path
-
+from setuptools import setup
 
 here = path.abspath(path.dirname(__file__))
 
@@ -11,14 +10,14 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 setup(
     name = 'win32wifi',
     packages = ['win32wifi'], # this must be the same as the name above
-    version = '0.2.1',
+    version = '0.0.2',
     description = 'Python Windows Wifi - !Still Under Development!',
     long_description=long_description,
     author = 'Shaked Gitelman',
     author_email = 'shaked.dev@gmail.com',
-    url = 'https://github.com/almondg/win32wifi', # use the URL to the github repo
-    download_url = 'https://github.com/almondg/win32wifi/tarball/0.2.1', # I'll explain this in a second
-    keywords = ['windows', 'win32', 'wifi', 'wlan', 'wlanapi', 'wlanapi.dll'], # arbitrary keywords
+    url = 'https://github.com/almondg/win32wifi',
+    download_url = 'https://github.com/almondg/win32wifi/tarball/0.0.2',  # TOODO: Actually upload this to github.
+    keywords = ['windows', 'win32', 'wifi', 'wlan', 'wlanapi', 'wlanapi.dll'],
     license='GPLv3+',
     classifiers=[
           # How mature is this project? Common values are

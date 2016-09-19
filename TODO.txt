@@ -13,11 +13,11 @@ WIP
  + WlanConnect
  + WlanDisconnect
  + WlanQueryInterface
+ + WlanDeleteProfile
+ + WLAN_NOTIFICATION_CALLBACK
 
 PENDING
- + WLAN_NOTIFICATION_CALLBACK
  + WlanAllocateMemory
- + WlanDeleteProfile
  + WlanExtractPsdIEDataList
  + WlanGetFilterList
  + WlanGetInterfaceCapability

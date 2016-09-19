@@ -1,2 +1,14 @@
 demo.py
 .pypirc
+.idea/
+MANIFEST
+__pycache__/
+build/
+dist/
+examples/connect.py
+register_notification.py
+win32wifi.egg-info/
+win32wifi/Win32NativeWifiApi.pyc
+win32wifi/Win32Wifi.pyc
+win32wifi/__init__.pyc
+win32wifi/__pycache__/
