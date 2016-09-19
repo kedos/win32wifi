@@ -21,6 +21,11 @@
 #
 
 from ctypes import *
+from datetime import datetime
+from enum import Enum
+import functools
+import time
+
 from comtypes import GUID
 from win32wifi.Win32NativeWifiApi import *
 
@@ -355,7 +360,7 @@ def connect(wireless_interface, connection_params):
     WlanCloseHandle(handle)
     return result
 
-def dot11bssid_to_string(dot11Bssid):
+def dot11bssidToString(dot11Bssid):
     return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
 
 def queryInterface(wireless_interface, opcode_item):
@@ -381,32 +386,108 @@ def queryInterface(wireless_interface, opcode_item):
         strProfileName = r.strProfileName
         aa = r.wlanAssociationAttributes
         wlanAssociationAttributes = {
-                "dot11Ssid": aa.dot11Ssid.SSID,
-                "dot11BssType": DOT11_BSS_TYPE_DICT_KV[aa.dot11BssType],
-                "dot11Bssid": dot11bssid_to_string(aa.dot11Bssid),
-                "dot11PhyType": DOT11_PHY_TYPE_DICT[aa.dot11PhyType],
-                "uDot11PhyIndex": c_long(aa.uDot11PhyIndex).value,
-                "wlanSignalQuality": c_long(aa.wlanSignalQuality).value,
-                "ulRxRate": c_long(aa.ulRxRate).value,
-                "ulTxRate": c_long(aa.ulTxRate).value
-                }
+            "dot11Ssid": aa.dot11Ssid.SSID,
+            "dot11BssType": DOT11_BSS_TYPE_DICT_KV[aa.dot11BssType],
+            "dot11Bssid": dot11bssidToString(aa.dot11Bssid),
+            "dot11PhyType": DOT11_PHY_TYPE_DICT[aa.dot11PhyType],
+            "uDot11PhyIndex": c_long(aa.uDot11PhyIndex).value,
+            "wlanSignalQuality": c_long(aa.wlanSignalQuality).value,
+            "ulRxRate": c_long(aa.ulRxRate).value,
+            "ulTxRate": c_long(aa.ulTxRate).value,
+        }
         sa = r.wlanSecurityAttributes
         wlanSecurityAttributes = {
-                "bSecurityEnabled": sa.bSecurityEnabled,
-                "bOneXEnabled": sa.bOneXEnabled,
-                "dot11AuthAlgorithm": \
-                        DOT11_AUTH_ALGORITHM_DICT[sa.dot11AuthAlgorithm],
-                "dot11CipherAlgorithm": \
-                        DOT11_CIPHER_ALGORITHM_DICT[sa.dot11CipherAlgorithm]
-                }
+            "bSecurityEnabled": sa.bSecurityEnabled,
+            "bOneXEnabled": sa.bOneXEnabled,
+            "dot11AuthAlgorithm": DOT11_AUTH_ALGORITHM_DICT[sa.dot11AuthAlgorithm],
+            "dot11CipherAlgorithm": DOT11_CIPHER_ALGORITHM_DICT[sa.dot11CipherAlgorithm],
+        }
         ext_out = {
-                "isState": isState,
-                "wlanConnectionMode": wlanConnectionMode,
-                "strProfileName": strProfileName,
-                "wlanAssociationAttributes": wlanAssociationAttributes,
-                "wlanSecurityAttributes": wlanSecurityAttributes
-                }
+            "isState": isState,
+            "wlanConnectionMode": wlanConnectionMode,
+            "strProfileName": strProfileName,
+            "wlanAssociationAttributes": wlanAssociationAttributes,
+            "wlanSecurityAttributes": wlanSecurityAttributes,
+        }
     else:
         ext_out = None
     return result.contents, ext_out
 
+
+def wndToStr(wlan_notification_data):
+    "".join([
+        "NotificationSource: %s" % wlan_notification_data.NotificationSource,
+        "NotificationCode: %s" % wlan_notification_data.NotificationCode,
+        "InterfaceGuid: %s" % wlan_notification_data.InterfaceGuid,
+        "dwDataSize: %d" % wlan_notification_data.dwDataSize,
+        "pData: %s" % wlan_notification_data.pData,
+        ])
+
+
+class WlanEvent(object):
+
+    ns_type_to_codes_dict = {
+        "WLAN_NOTIFICATION_SOURCE_NONE":        None,
+        "WLAN_NOTIFICATION_SOURCE_ONEX":        ONEX_NOTIFICATION_TYPE_ENUM,
+        "WLAN_NOTIFICATION_SOURCE_ACM":         WLAN_NOTIFICATION_ACM_ENUM,
+        "WLAN_NOTIFICATION_SOURCE_MSM":         WLAN_NOTIFICATION_MSM_ENUM,
+        "WLAN_NOTIFICATION_SOURCE_SECURITY":    None,
+        "WLAN_NOTIFICATION_SOURCE_IHV":         None,
+        "WLAN_NOTIFICATION_SOURCE_HNWK":        WLAN_HOSTED_NETWORK_NOTIFICATION_CODE_ENUM,
+        "WLAN_NOTIFICATION_SOURCE_ALL":         ONEX_NOTIFICATION_TYPE_ENUM,
+    }
+
+    def __init__(self, original, notificationSource, notificationCode, interfaceGuid, data):
+        self.original = original
+        self.notificationSource = notificationSource
+        self.notificationCode = notificationCode
+        self.interfaceGuid = interfaceGuid
+        self.data = data
+
+    @staticmethod
+    def from_wlan_notification_data(wnd):
+        data = wnd.contents
+        """
+        typedef struct _WLAN_NOTIFICATION_DATA {
+            DWORD NotificationSource;
+            DWORD NotificationCode;
+            GUID  InterfaceGuid;
+            DWORD dwDataSize;
+            PVOID pData;
+        }
+        """
+        if data.NotificationSource not in WLAN_NOTIFICATION_SOURCE_DICT:
+            return None
+
+        source = WLAN_NOTIFICATION_SOURCE_DICT[data.NotificationSource]
+        codes = WlanEvent.ns_type_to_codes_dict[source]
+
+        if codes != None:
+            try:
+                code = codes(data.NotificationCode).name
+                event = WlanEvent(data,
+                                  source,
+                                  code,
+                                  data.InterfaceGuid,
+                                  None)
+                return event
+            except:
+                return None
+
+
+    def __str__(self):
+        return self.notificationCode
+
+
+def OnWlanNotification(callback, wlan_notification_data, p):
+    event = WlanEvent.from_wlan_notification_data(wlan_notification_data)
+
+    if event != None:
+        callback(event)
+
+global_callbacks = []
+
+def registerNotification(callback):
+    handle = WlanOpenHandle()
+
+    global_callbacks.append(WlanRegisterNotification(handle, functools.partial(OnWlanNotification, callback)))

@@ -13,6 +13,7 @@ setup(
     packages = ['win32wifi'], # this must be the same as the name above
     version = '0.2.1',
     description = 'Python Windows Wifi - !Still Under Development!',
+    long_description=long_description,
     author = 'Shaked Gitelman',
     author_email = 'shaked.dev@gmail.com',
     url = 'https://github.com/almondg/win32wifi', # use the URL to the github repo
