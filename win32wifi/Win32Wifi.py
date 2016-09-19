@@ -21,7 +21,9 @@
 #
 
 from ctypes import *
+from datetime import datetime
 from enum import Enum
+import functools
 import time
 
 from comtypes import GUID
@@ -358,7 +360,7 @@ def connect(wireless_interface, connection_params):
     WlanCloseHandle(handle)
     return result
 
-def dot11bssid_to_string(dot11Bssid):
+def dot11bssidToString(dot11Bssid):
     return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
 
 def queryInterface(wireless_interface, opcode_item):
@@ -386,7 +388,7 @@ def queryInterface(wireless_interface, opcode_item):
         wlanAssociationAttributes = {
             "dot11Ssid": aa.dot11Ssid.SSID,
             "dot11BssType": DOT11_BSS_TYPE_DICT_KV[aa.dot11BssType],
-            "dot11Bssid": dot11bssid_to_string(aa.dot11Bssid),
+            "dot11Bssid": dot11bssidToString(aa.dot11Bssid),
             "dot11PhyType": DOT11_PHY_TYPE_DICT[aa.dot11PhyType],
             "uDot11PhyIndex": c_long(aa.uDot11PhyIndex).value,
             "wlanSignalQuality": c_long(aa.wlanSignalQuality).value,
@@ -411,106 +413,81 @@ def queryInterface(wireless_interface, opcode_item):
         ext_out = None
     return result.contents, ext_out
 
-class _ONEX_NOTIFICATION_TYPE(Enum):
-    OneXPublicNotificationBase          = 0
-    OneXNotificationTypeResultUpdate    = 1
-    OneXNotificationTypeAuthRestarted   = 2
-    OneXNotificationTypeEventInvalid    = 3
-    OneXNumNotifications                = OneXNotificationTypeEventInvalid
 
-class _WLAN_NOTIFICATION_ACM(Enum):
-    wlan_notification_acm_start                         = 0
-    wlan_notification_acm_autoconf_enabled              = 1
-    wlan_notification_acm_autoconf_disabled             = 2
-    wlan_notification_acm_background_scan_enabled       = 3
-    wlan_notification_acm_background_scan_disabled      = 4
-    wlan_notification_acm_bss_type_change               = 5
-    wlan_notification_acm_power_setting_change          = 6
-    wlan_notification_acm_scan_complete                 = 7
-    wlan_notification_acm_scan_fail                     = 8
-    wlan_notification_acm_connection_start              = 9
-    wlan_notification_acm_connection_complete           = 10
-    wlan_notification_acm_connection_attempt_fail       = 11
-    wlan_notification_acm_filter_list_change            = 12
-    wlan_notification_acm_interface_arrival             = 13
-    wlan_notification_acm_interface_removal             = 14
-    wlan_notification_acm_profile_change                = 15
-    wlan_notification_acm_profile_name_change           = 16
-    wlan_notification_acm_profiles_exhausted            = 17
-    wlan_notification_acm_network_not_available         = 18
-    wlan_notification_acm_network_available             = 19
-    wlan_notification_acm_disconnecting                 = 20
-    wlan_notification_acm_disconnected                  = 21
-    wlan_notification_acm_adhoc_network_state_change    = 22
-    wlan_notification_acm_profile_unblocked             = 23
-    wlan_notification_acm_screen_power_change           = 24
-    wlan_notification_acm_profile_blocked               = 25
-    wlan_notification_acm_scan_list_refresh             = 26
-    wlan_notification_acm_end                           = 27
+def wndToStr(wlan_notification_data):
+    "".join([
+        "NotificationSource: %s" % wlan_notification_data.NotificationSource,
+        "NotificationCode: %s" % wlan_notification_data.NotificationCode,
+        "InterfaceGuid: %s" % wlan_notification_data.InterfaceGuid,
+        "dwDataSize: %d" % wlan_notification_data.dwDataSize,
+        "pData: %s" % wlan_notification_data.pData,
+        ])
 
-class _WLAN_NOTIFICATION_MSM(Enum):
-    wlan_notification_msm_start                         = 0
-    wlan_notification_msm_associating                   = 1 
-    wlan_notification_msm_associated                    = 2
-    wlan_notification_msm_authenticating                = 3
-    wlan_notification_msm_connected                     = 4
-    wlan_notification_msm_roaming_start                 = 5
-    wlan_notification_msm_roaming_end                   = 6
-    wlan_notification_msm_radio_state_change            = 7
-    wlan_notification_msm_signal_quality_change         = 8
-    wlan_notification_msm_disassociating                = 9
-    wlan_notification_msm_disconnected                  = 10
-    wlan_notification_msm_peer_join                     = 11
-    wlan_notification_msm_peer_leave                    = 12
-    wlan_notification_msm_adapter_removal               = 13
-    wlan_notification_msm_adapter_operation_mode_change = 14
-    wlan_notification_msm_end                           = 15
 
-class _WLAN_HOSTED_NETWORK_NOTIFICATION_CODE(Enum):
-    wlan_hosted_network_state_change        = 4096
-    wlan_hosted_network_peer_state_change   = 4097
-    wlan_hosted_network_radio_state_change  = 4098
+class WlanEvent(object):
 
-def WlanNotification(wlan_notification_data, p):
-    data = wlan_notification_data.contents
-    """
-    typedef struct _WLAN_NOTIFICATION_DATA {
-        DWORD NotificationSource;
-        DWORD NotificationCode;
-        GUID  InterfaceGuid;
-        DWORD dwDataSize;
-        PVOID pData;
-    }
-    """
-
-    notification_sources = {
-        0x0000: ("WLAN_NOTIFICATION_SOURCE_NONE", None),
-        0x0004: ("WLAN_NOTIFICATION_SOURCE_ONEX", _ONEX_NOTIFICATION_TYPE),
-        0x0008: ("WLAN_NOTIFICATION_SOURCE_ACM", _WLAN_NOTIFICATION_ACM),
-        0x0010: ("WLAN_NOTIFICATION_SOURCE_MSM", _WLAN_NOTIFICATION_MSM),
-        0x0020: ("WLAN_NOTIFICATION_SOURCE_SECURITY", None),
-        0x0040: ("WLAN_NOTIFICATION_SOURCE_IHV", None),
-        0x0080: ("WLAN_NOTIFICATION_SOURCE_HNWK", _WLAN_HOSTED_NETWORK_NOTIFICATION_CODE),
-        0xffff: ("WLAN_NOTIFICATION_SOURCE_ALL", _ONEX_NOTIFICATION_TYPE),
+    ns_type_to_codes_dict = {
+        "WLAN_NOTIFICATION_SOURCE_NONE":        None,
+        "WLAN_NOTIFICATION_SOURCE_ONEX":        ONEX_NOTIFICATION_TYPE_ENUM,
+        "WLAN_NOTIFICATION_SOURCE_ACM":         WLAN_NOTIFICATION_ACM_ENUM,
+        "WLAN_NOTIFICATION_SOURCE_MSM":         WLAN_NOTIFICATION_MSM_ENUM,
+        "WLAN_NOTIFICATION_SOURCE_SECURITY":    None,
+        "WLAN_NOTIFICATION_SOURCE_IHV":         None,
+        "WLAN_NOTIFICATION_SOURCE_HNWK":        WLAN_HOSTED_NETWORK_NOTIFICATION_CODE_ENUM,
+        "WLAN_NOTIFICATION_SOURCE_ALL":         ONEX_NOTIFICATION_TYPE_ENUM,
     }
 
-    if data.NotificationSource not in notification_sources:
-        print("WARNING: Got Unknown Notification Source - %d" % data.NotificationSource)
-        return 
+    def __init__(self, original, notificationSource, notificationCode, interfaceGuid, data):
+        self.original = original
+        self.notificationSource = notificationSource
+        self.notificationCode = notificationCode
+        self.interfaceGuid = interfaceGuid
+        self.data = data
 
-    types = notification_sources[data.NotificationSource]
+    @staticmethod
+    def from_wlan_notification_data(wnd):
+        data = wnd.contents
+        """
+        typedef struct _WLAN_NOTIFICATION_DATA {
+            DWORD NotificationSource;
+            DWORD NotificationCode;
+            GUID  InterfaceGuid;
+            DWORD dwDataSize;
+            PVOID pData;
+        }
+        """
+        if data.NotificationSource not in WLAN_NOTIFICATION_SOURCE_DICT:
+            return None
 
-    if types[1] != None:
-        try:
-            print(types[1](data.NotificationCode))
-        except:
-            print("WARNING: Got Unknown Notification Code (%d) for %s" % (data.NotificationCode, types[0]ש))
+        source = WLAN_NOTIFICATION_SOURCE_DICT[data.NotificationSource]
+        codes = WlanEvent.ns_type_to_codes_dict[source]
 
-def registerNotification():
+        if codes != None:
+            try:
+                code = codes(data.NotificationCode).name
+                event = WlanEvent(data,
+                                  source,
+                                  code,
+                                  data.InterfaceGuid,
+                                  None)
+                return event
+            except:
+                return None
+
+
+    def __str__(self):
+        return self.notificationCode
+
+
+def OnWlanNotification(callback, wlan_notification_data, p):
+    event = WlanEvent.from_wlan_notification_data(wlan_notification_data)
+
+    if event != None:
+        callback(event)
+
+global_callbacks = []
+
+def registerNotification(callback):
     handle = WlanOpenHandle()
-    callback = WlanNotification
 
-    rc = WlanRegisterNotification(handle, callback)
-    
-    while True:
-        time.sleep(0)
+    global_callbacks.append(WlanRegisterNotification(handle, functools.partial(OnWlanNotification, callback)))

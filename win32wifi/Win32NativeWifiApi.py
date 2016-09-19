@@ -21,6 +21,7 @@
 #
 
 from ctypes import *
+from enum import Enum
 
 from comtypes import GUID
 
@@ -29,6 +30,7 @@ from ctypes.wintypes import DWORD
 from ctypes.wintypes import HANDLE
 from ctypes.wintypes import LPWSTR
 from ctypes.wintypes import LPCWSTR
+
 
 ERROR_SUCCESS = 0
 
@@ -148,6 +150,81 @@ WLAN_PROFILE_GET_PLAINTEXT_KEY = 0x00000004
 WLAN_NOTIFICATION_SOURCE_ALL = 0x0000ffff
 WLAN_NOTIFICATION_SOURCE_ONEX = 0x00000004
 WLAN_NOTIFICATION_SOURCE_ACM = 0x00000008
+
+WLAN_NOTIFICATION_SOURCE_DICT = {
+    0x0000: "WLAN_NOTIFICATION_SOURCE_NONE",
+    0x0008: "WLAN_NOTIFICATION_SOURCE_ACM", 
+    0x0004: "WLAN_NOTIFICATION_SOURCE_ONEX",
+    0x0010: "WLAN_NOTIFICATION_SOURCE_MSM", 
+    0x0020: "WLAN_NOTIFICATION_SOURCE_SECURITY",
+    0x0040: "WLAN_NOTIFICATION_SOURCE_IHV",
+    0x0080: "WLAN_NOTIFICATION_SOURCE_HNWK",
+    0xffff: "WLAN_NOTIFICATION_SOURCE_ALL",
+}
+
+
+class ONEX_NOTIFICATION_TYPE_ENUM(Enum):
+    OneXPublicNotificationBase          = 0
+    OneXNotificationTypeResultUpdate    = 1
+    OneXNotificationTypeAuthRestarted   = 2
+    OneXNotificationTypeEventInvalid    = 3
+    OneXNumNotifications                = OneXNotificationTypeEventInvalid
+
+
+class WLAN_NOTIFICATION_ACM_ENUM(Enum):
+    wlan_notification_acm_start                         = 0
+    wlan_notification_acm_autoconf_enabled              = 1
+    wlan_notification_acm_autoconf_disabled             = 2
+    wlan_notification_acm_background_scan_enabled       = 3
+    wlan_notification_acm_background_scan_disabled      = 4
+    wlan_notification_acm_bss_type_change               = 5
+    wlan_notification_acm_power_setting_change          = 6
+    wlan_notification_acm_scan_complete                 = 7
+    wlan_notification_acm_scan_fail                     = 8
+    wlan_notification_acm_connection_start              = 9
+    wlan_notification_acm_connection_complete           = 10
+    wlan_notification_acm_connection_attempt_fail       = 11
+    wlan_notification_acm_filter_list_change            = 12
+    wlan_notification_acm_interface_arrival             = 13
+    wlan_notification_acm_interface_removal             = 14
+    wlan_notification_acm_profile_change                = 15
+    wlan_notification_acm_profile_name_change           = 16
+    wlan_notification_acm_profiles_exhausted            = 17
+    wlan_notification_acm_network_not_available         = 18
+    wlan_notification_acm_network_available             = 19
+    wlan_notification_acm_disconnecting                 = 20
+    wlan_notification_acm_disconnected                  = 21
+    wlan_notification_acm_adhoc_network_state_change    = 22
+    wlan_notification_acm_profile_unblocked             = 23
+    wlan_notification_acm_screen_power_change           = 24
+    wlan_notification_acm_profile_blocked               = 25
+    wlan_notification_acm_scan_list_refresh             = 26
+    wlan_notification_acm_end                           = 27
+
+
+class WLAN_NOTIFICATION_MSM_ENUM(Enum):
+    wlan_notification_msm_start                         = 0
+    wlan_notification_msm_associating                   = 1 
+    wlan_notification_msm_associated                    = 2
+    wlan_notification_msm_authenticating                = 3
+    wlan_notification_msm_connected                     = 4
+    wlan_notification_msm_roaming_start                 = 5
+    wlan_notification_msm_roaming_end                   = 6
+    wlan_notification_msm_radio_state_change            = 7
+    wlan_notification_msm_signal_quality_change         = 8
+    wlan_notification_msm_disassociating                = 9
+    wlan_notification_msm_disconnected                  = 10
+    wlan_notification_msm_peer_join                     = 11
+    wlan_notification_msm_peer_leave                    = 12
+    wlan_notification_msm_adapter_removal               = 13
+    wlan_notification_msm_adapter_operation_mode_change = 14
+    wlan_notification_msm_end                           = 15
+
+
+class WLAN_HOSTED_NETWORK_NOTIFICATION_CODE_ENUM(Enum):
+    wlan_hosted_network_state_change        = 4096
+    wlan_hosted_network_peer_state_change   = 4097
+    wlan_hosted_network_radio_state_change  = 4098
 
 
 class WLAN_INTERFACE_INFO(Structure):
@@ -384,6 +461,7 @@ class WLAN_PROFILE_INFO_LIST(Structure):
                 ("Index", DWORD),
                 ("ProfileInfo", WLAN_PROFILE_INFO * 1)]
 
+
 class WLAN_NOTIFICATION_DATA(Structure):
     """
         The WLAN_NOTIFICATION_DATA structure contains information provided 
@@ -403,6 +481,7 @@ class WLAN_NOTIFICATION_DATA(Structure):
                 ("dwDataSize", DWORD),
                 ("pData", c_void_p)]
 
+
 class WLAN_NOTIFICATION_CALLBACK():
     """
         The WLAN_NOTIFICATION_CALLBACK allback function prototype defines 
@@ -415,6 +494,7 @@ class WLAN_NOTIFICATION_CALLBACK():
     """
     _fields_ = [("data", POINTER(WLAN_NOTIFICATION_DATA)),
                 ("context", c_void_p)]
+
 
 def WlanRegisterNotification(hClientHandle, callback):
     """
@@ -431,7 +511,10 @@ def WlanRegisterNotification(hClientHandle, callback):
           _Out_opt_  PDWORD                      pdwPrevNotifSource
         );
     """
-    WLAN_NOTIFICATION_CALLBACK = CFUNCTYPE(None, POINTER(WLAN_NOTIFICATION_DATA), c_void_p, use_last_error=True)
+    WLAN_NOTIFICATION_CALLBACK = CFUNCTYPE(None,  # type for return value  
+                                           POINTER(WLAN_NOTIFICATION_DATA), 
+                                           c_void_p, 
+                                           use_last_error=True)
 
     func_ref = wlanapi.WlanRegisterNotification
     func_ref.argtypes = [
@@ -460,7 +543,6 @@ def WlanRegisterNotification(hClientHandle, callback):
 
     if result != ERROR_SUCCESS:
         raise WinError(result)
-
     return funcCallback
 
 
@@ -726,6 +808,14 @@ def WlanGetProfile(hClientHandle, pInterfaceGuid, profileName):
     return xml
 
 def WlanDeleteProfile(hClientHandle, pInterfaceGuid, profileName):
+    """
+    DWORD WINAPI WlanDeleteProfile(
+        _In_             HANDLE  hClientHandle,
+        _In_       const GUID    *pInterfaceGuid,
+        _In_             LPCWSTR strProfileName,
+        _Reserved_       PVOID   pReserved
+    );
+    """
     func_ref = wlanapi.WlanDeleteProfile
     func_ref.argtypes = [HANDLE,
                          POINTER(GUID),
