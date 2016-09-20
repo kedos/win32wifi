@@ -487,7 +487,12 @@ def OnWlanNotification(callback, wlan_notification_data, p):
 
 global_callbacks = []
 
+
 def registerNotification(callback):
     handle = WlanOpenHandle()
 
     global_callbacks.append(WlanRegisterNotification(handle, functools.partial(OnWlanNotification, callback)))
+
+
+def unregisterAllNotifications():
+    raise NotImplementedError()
