@@ -427,14 +427,14 @@ def wndToStr(wlan_notification_data):
 class WlanEvent(object):
 
     ns_type_to_codes_dict = {
-        "WLAN_NOTIFICATION_SOURCE_NONE":        None,
-        "WLAN_NOTIFICATION_SOURCE_ONEX":        ONEX_NOTIFICATION_TYPE_ENUM,
-        "WLAN_NOTIFICATION_SOURCE_ACM":         WLAN_NOTIFICATION_ACM_ENUM,
-        "WLAN_NOTIFICATION_SOURCE_MSM":         WLAN_NOTIFICATION_MSM_ENUM,
-        "WLAN_NOTIFICATION_SOURCE_SECURITY":    None,
-        "WLAN_NOTIFICATION_SOURCE_IHV":         None,
-        "WLAN_NOTIFICATION_SOURCE_HNWK":        WLAN_HOSTED_NETWORK_NOTIFICATION_CODE_ENUM,
-        "WLAN_NOTIFICATION_SOURCE_ALL":         ONEX_NOTIFICATION_TYPE_ENUM,
+        WLAN_NOTIFICATION_SOURCE_NONE:        None,
+        WLAN_NOTIFICATION_SOURCE_ONEX:        ONEX_NOTIFICATION_TYPE_ENUM,
+        WLAN_NOTIFICATION_SOURCE_ACM:         WLAN_NOTIFICATION_ACM_ENUM,
+        WLAN_NOTIFICATION_SOURCE_MSM:         WLAN_NOTIFICATION_MSM_ENUM,
+        WLAN_NOTIFICATION_SOURCE_SECURITY:    None,
+        WLAN_NOTIFICATION_SOURCE_IHV:         None,
+        WLAN_NOTIFICATION_SOURCE_HNWK:        WLAN_HOSTED_NETWORK_NOTIFICATION_CODE_ENUM,
+        WLAN_NOTIFICATION_SOURCE_ALL:         ONEX_NOTIFICATION_TYPE_ENUM,
     }
 
     def __init__(self, original, notificationSource, notificationCode, interfaceGuid, data):
@@ -446,7 +446,7 @@ class WlanEvent(object):
 
     @staticmethod
     def from_wlan_notification_data(wnd):
-        data = wnd.contents
+        actual = wnd.contents
         """
         typedef struct _WLAN_NOTIFICATION_DATA {
             DWORD NotificationSource;
@@ -456,24 +456,51 @@ class WlanEvent(object):
             PVOID pData;
         }
         """
-        if data.NotificationSource not in WLAN_NOTIFICATION_SOURCE_DICT:
+        if actual.NotificationSource not in WLAN_NOTIFICATION_SOURCE_DICT:
             return None
 
-        source = WLAN_NOTIFICATION_SOURCE_DICT[data.NotificationSource]
-        codes = WlanEvent.ns_type_to_codes_dict[source]
+        codes = WlanEvent.ns_type_to_codes_dict[actual.NotificationSource]
 
         if codes != None:
             try:
-                code = codes(data.NotificationCode).name
-                event = WlanEvent(data,
-                                  source,
-                                  code,
-                                  data.InterfaceGuid,
-                                  None)
+                code = codes(actual.NotificationCode)
+                data = WlanEvent.parse_data(actual.pData, actual.dwDataSize, actual.NotificationSource, code)
+                event = WlanEvent(actual,
+                                  WLAN_NOTIFICATION_SOURCE_DICT[actual.NotificationSource],
+                                  code.name,
+                                  actual.InterfaceGuid,
+                                  data)
                 return event
             except:
                 return None
 
+    @staticmethod
+    def parse_data(data_pointer, data_size, source, code):
+        if data_size == 0 or source != WLAN_NOTIFICATION_SOURCE_MSM:
+            return None
+
+        typ = WLAN_NOTIFICATION_DATA_MSM_TYPES_DICT[code]
+
+        if typ is None:
+            return None
+
+        return WlanEvent.deref(data_pointer, typ)
+
+    @staticmethod
+    def deref(addr, typ):
+        return (typ).from_address(addr)
+
+    def msmNotifDataToDict(self, msm_data):
+        if not isinstance(msm_data, WLAN_MSM_NOTIFICATION_DATA):
+            return None
+
+        return {
+                    "wlanConnectionMode": WLAN_CONNECTION_MODE_KV[msm_data.wlanConnectionMode],
+                    "strProfileName": msm_data.strProfileName,
+                    "dot11Ssid": msm_data.dot11Ssid.SSID[:msm_data.dot11Ssid.SSIDLength],
+                    "dot11BssType": DOT11_BSS_TYPE_DICT_KV[msm_data.dot11BssType],
+                    "dot11MacAddr": ":".join([hex(x)[2:] for x in msm_data.dot11MacAddr[:6]]),
+                }
 
     def __str__(self):
         return self.notificationCode

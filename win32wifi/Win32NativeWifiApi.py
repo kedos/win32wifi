@@ -229,6 +229,71 @@ class WLAN_HOSTED_NETWORK_NOTIFICATION_CODE_ENUM(Enum):
     wlan_hosted_network_radio_state_change  = 4098
 
 
+WLAN_CONNECTION_MODE = c_uint
+WLAN_CONNECTION_MODE_KV = {0: "wlan_connection_mode_profile",
+                           1: "wlan_connection_mode_temporary_profile",
+                           2: "wlan_connection_mode_discovery_secure",
+                           3: "wlan_connection_mode_discovery_unsecure",
+                           4: "wlan_connection_mode_auto",
+                           5: "wlan_connection_mode_invalid"}
+try:
+    WLAN_CONNECTION_MODE_VK = { v: k for k, v in
+            WLAN_CONNECTION_MODE_KV.items() }
+except AttributeError:
+    WLAN_CONNECTION_MODE_VK = { v: k for k, v in
+            WLAN_CONNECTION_MODE_KV.iteritems() }
+
+#
+# class EnumerationType(type(c_uint)):
+#     def __new__(metacls, name, bases, dict):
+#         if not "_members_" in dict:
+#             _members_ = {}
+#             for key, value in dict.items():
+#                 if not key.startswith("_"):
+#                     _members_[key] = value
+#
+#             dict["_members_"] = _members_
+#         else:
+#             _members_ = dict["_members_"]
+#
+#         dict["_reverse_map_"] = { v: k for k, v in _members_.items() }
+#         cls = type(c_uint).__new__(metacls, name, bases, dict)
+#         for key,value in cls._members_.items():
+#             globals()[key] = value
+#         return cls
+#
+#     def __repr__(self):
+#         return "<Enumeration %s>" % self.__name__
+#
+#
+# class CEnumeration(c_uint):
+#     __metaclass__ = EnumerationType
+#     _members_     = {}
+#
+#     def __repr__(self):
+#         value = self.value
+#         return "<%s.%s: %d>" % (
+#             self.__class__.__name__,
+#             self._reverse_map_.get(value, '(unknown)'),
+#             value
+#         )
+#
+#     def __eq__(self, other):
+#         if isinstance(other, int):
+#             return self.value == other
+#
+#         return type(self) == type(other) and self.value == other.value
+#
+#
+# class WLAN_CONNECTION_MODE(CEnumeration):
+#     wlan_connection_mode_profile            = 0
+#     wlan_connection_mode_temporary_profile  = 1
+#     wlan_connection_mode_discovery_secure   = 2
+#     wlan_connection_mode_discovery_unsecure = 3
+#     wlan_connection_mode_auto               = 4
+#     wlan_connection_mode_invalid            = 5
+
+
 class WLAN_INTERFACE_INFO(Structure):
     """
         The WLAN_INTERFACE_INFO structure contains information about a wireless
@@ -496,6 +561,49 @@ class WLAN_NOTIFICATION_CALLBACK():
     """
     _fields_ = [("data", POINTER(WLAN_NOTIFICATION_DATA)),
                 ("context", c_void_p)]
+
+
+class WLAN_MSM_NOTIFICATION_DATA(Structure):
+    """
+    typedef struct _WLAN_MSM_NOTIFICATION_DATA {
+        WLAN_CONNECTION_MODE wlanConnectionMode;
+        WCHAR                strProfileName[WLAN_MAX_NAME_LENGTH];
+        DOT11_SSID           dot11Ssid;
+        DOT11_BSS_TYPE       dot11BssType;
+        DOT11_MAC_ADDRESS    dot11MacAddr;
+        BOOL                 bSecurityEnabled;
+        BOOL                 bFirstPeer;
+        BOOL                 bLastPeer;
+        WLAN_REASON_CODE     wlanReasonCode;
+    } WLAN_MSM_NOTIFICATION_DATA, *PWLAN_MSM_NOTIFICATION_DATA;
+    """
+    _fields_ = [("wlanConnectionMode", WLAN_CONNECTION_MODE),
+                ("strProfileName", c_wchar * 256),
+                ("dot11Ssid", DOT11_SSID),
+                ("dot11BssType", DOT11_BSS_TYPE),
+                ("dot11MacAddr", DOT11_MAC_ADDRESS),
+                ("bSecurityEnabled", BOOL),
+                ("bFirstPeer", BOOL),
+                ("bLastPeer", BOOL),
+                ("wlanReasonCode", WLAN_REASON_CODE),]
+
+
+WLAN_NOTIFICATION_DATA_MSM_TYPES_DICT = {
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_associating: WLAN_MSM_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_associated: WLAN_MSM_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_authenticating: WLAN_MSM_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_connected: WLAN_MSM_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_roaming_start: WLAN_MSM_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_roaming_end: WLAN_MSM_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_radio_state_change: None,
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_signal_quality_change: c_ulong,
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_disassociating: WLAN_MSM_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_disconnected: WLAN_MSM_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_peer_join: WLAN_MSM_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_peer_leave: WLAN_MSM_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_adapter_removal: WLAN_MSM_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_adapter_operation_mode_change: c_ulong,
+}
 
 
 def WlanRegisterNotification(hClientHandle, callback):
@@ -831,21 +939,7 @@ def WlanDeleteProfile(hClientHandle, pInterfaceGuid, profileName):
     if result != ERROR_SUCCESS:
         raise Exception("WlanDeleteProfile failed. error %d" % result, result)
     return result    
-    
 
-WLAN_CONNECTION_MODE = c_uint
-WLAN_CONNECTION_MODE_KV = {0: "wlan_connection_mode_profile",
-                           1: "wlan_connection_mode_temporary_profile",
-                           2: "wlan_connection_mode_discovery_secure",
-                           3: "wlan_connection_mode_discovery_unsecure",
-                           4: "wlan_connection_mode_auto",
-                           5: "wlan_connection_mode_invalid"}
-try:
-    WLAN_CONNECTION_MODE_VK = { v: k for k, v in
-            WLAN_CONNECTION_MODE_KV.items() }
-except AttributeError:
-    WLAN_CONNECTION_MODE_VK = { v: k for k, v in
-            WLAN_CONNECTION_MODE_KV.iteritems() }
 
 class NDIS_OBJECT_HEADER(Structure):
     """
