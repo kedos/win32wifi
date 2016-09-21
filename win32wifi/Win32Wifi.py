@@ -165,6 +165,25 @@ class WirelessProfile(object):
         return result
 
 
+class MSMNotificationData(object):
+    def __init__(self, msm_notification_data):
+        assert isinstance(msm_notification_data, WLAN_MSM_NOTIFICATION_DATA)
+
+        self.connection_mode = WLAN_CONNECTION_MODE_KV[msm_notification_data.wlanConnectionMode]
+        self.profile_name = msm_notification_data.strProfileName
+        self.ssid = msm_notification_data.dot11Ssid.SSID[:msm_notification_data.dot11Ssid.SSIDLength]
+        self.bss_type = DOT11_BSS_TYPE_DICT_KV[msm_notification_data.dot11BssType]
+        self.mac_addr = ":".join([hex(x)[2:] for x in msm_notification_data.dot11MacAddr[:6]])
+
+    def __str__(self):
+        result = ""
+        result += "Connection Mode: %s\n" % self.connection_mode
+        result += "Profile Name: %s\n" % self.profile_name
+        result += "SSID: %s\n" % self.ssid
+        result += "BSS Type: %s\n" % self.bss_type
+        result += "MAC: %s\n" % self.mac_addr
+        return result
+
 def getWirelessInterfaces():
     """Returns a list of WirelessInterface objects based on the wireless
        interfaces available."""
@@ -284,8 +303,7 @@ def connect(wireless_interface, connection_params):
           _In_        const PWLAN_CONNECTION_PARAMETERS pConnectionParameters,
           _Reserved_  PVOID pReserved
         );
-    """
-    """
+
         connection_params should be a dict with this structure:
         { "connectionMode": "valid connection mode string",
           "profile": ("profile name string" | "profile xml" | None)*,
@@ -294,16 +312,6 @@ def connect(wireless_interface, connection_params):
           "bssType": valid bss type int,
           "flags": valid flag dword in 0x00000000 format }
         * Currently, only the name string is supported here.
-    """
-    """
-    The WlanConnect function attempts to connect to a specific network.
-
-    DWORD WINAPI WlanConnect(
-            _In_        HANDLE hClientHandle,
-            _In_        const GUID *pInterfaceGuid,
-            _In_        const PWLAN_CONNECTION_PARAMETERS pConnectionParameters,
-            _Reserved_  PVOID pReserved
-    );
     """
     handle = WlanOpenHandle()
     cnxp = WLAN_CONNECTION_PARAMETERS()
@@ -465,6 +473,8 @@ class WlanEvent(object):
             try:
                 code = codes(actual.NotificationCode)
                 data = WlanEvent.parse_data(actual.pData, actual.dwDataSize, actual.NotificationSource, code)
+                if isinstance(data, WLAN_MSM_NOTIFICATION_DATA):
+                    data = MSMNotificationData(data)
                 event = WlanEvent(actual,
                                   WLAN_NOTIFICATION_SOURCE_DICT[actual.NotificationSource],
                                   code.name,
@@ -489,18 +499,6 @@ class WlanEvent(object):
     @staticmethod
     def deref(addr, typ):
         return (typ).from_address(addr)
-
-    def msmNotifDataToDict(self, msm_data):
-        if not isinstance(msm_data, WLAN_MSM_NOTIFICATION_DATA):
-            return None
-
-        return {
-                    "wlanConnectionMode": WLAN_CONNECTION_MODE_KV[msm_data.wlanConnectionMode],
-                    "strProfileName": msm_data.strProfileName,
-                    "dot11Ssid": msm_data.dot11Ssid.SSID[:msm_data.dot11Ssid.SSIDLength],
-                    "dot11BssType": DOT11_BSS_TYPE_DICT_KV[msm_data.dot11BssType],
-                    "dot11MacAddr": ":".join([hex(x)[2:] for x in msm_data.dot11MacAddr[:6]]),
-                }
 
     def __str__(self):
         return self.notificationCode
