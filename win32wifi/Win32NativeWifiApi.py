@@ -243,56 +243,6 @@ except AttributeError:
     WLAN_CONNECTION_MODE_VK = { v: k for k, v in
             WLAN_CONNECTION_MODE_KV.iteritems() }
 
-#
-# class EnumerationType(type(c_uint)):
-#     def __new__(metacls, name, bases, dict):
-#         if not "_members_" in dict:
-#             _members_ = {}
-#             for key, value in dict.items():
-#                 if not key.startswith("_"):
-#                     _members_[key] = value
-#
-#             dict["_members_"] = _members_
-#         else:
-#             _members_ = dict["_members_"]
-#
-#         dict["_reverse_map_"] = { v: k for k, v in _members_.items() }
-#         cls = type(c_uint).__new__(metacls, name, bases, dict)
-#         for key,value in cls._members_.items():
-#             globals()[key] = value
-#         return cls
-#
-#     def __repr__(self):
-#         return "<Enumeration %s>" % self.__name__
-#
-#
-# class CEnumeration(c_uint):
-#     __metaclass__ = EnumerationType
-#     _members_     = {}
-#
-#     def __repr__(self):
-#         value = self.value
-#         return "<%s.%s: %d>" % (
-#             self.__class__.__name__,
-#             self._reverse_map_.get(value, '(unknown)'),
-#             value
-#         )
-#
-#     def __eq__(self, other):
-#         if isinstance(other, int):
-#             return self.value == other
-#
-#         return type(self) == type(other) and self.value == other.value
-#
-#
-# class WLAN_CONNECTION_MODE(CEnumeration):
-#     wlan_connection_mode_profile            = 0
-#     wlan_connection_mode_temporary_profile  = 1
-#     wlan_connection_mode_discovery_secure   = 2
-#     wlan_connection_mode_discovery_unsecure = 3
-#     wlan_connection_mode_auto               = 4
-#     wlan_connection_mode_invalid            = 5
-
 
 class WLAN_INTERFACE_INFO(Structure):
     """
@@ -605,6 +555,57 @@ WLAN_NOTIFICATION_DATA_MSM_TYPES_DICT = {
     WLAN_NOTIFICATION_MSM_ENUM.wlan_notification_msm_adapter_operation_mode_change: c_ulong,
 }
 
+class WLAN_CONNECTION_NOTIFICATION_DATA(Structure):
+    """
+    typedef struct _WLAN_CONNECTION_NOTIFICATION_DATA {
+        WLAN_CONNECTION_MODE wlanConnectionMode;
+        WCHAR                strProfileName[WLAN_MAX_NAME_LENGTH];
+        DOT11_SSID           dot11Ssid;
+        DOT11_BSS_TYPE       dot11BssType;
+        BOOL                 bSecurityEnabled;
+        WLAN_REASON_CODE     wlanReasonCode;
+        DWORD                dwFlags;
+        WCHAR                strProfileXml[1];
+    } WLAN_CONNECTION_NOTIFICATION_DATA, *PWLAN_CONNECTION_NOTIFICATION_DATA;
+    """
+    _fields_ = [("wlanConnectionMode", WLAN_CONNECTION_MODE),
+                ("strProfileName", c_wchar * 256),
+                ("dot11Ssid", DOT11_SSID),
+                ("dot11BssType", DOT11_BSS_TYPE),
+                ("bSecurityEnabled", BOOL),
+                ("wlanReasonCode", WLAN_REASON_CODE),
+                ("dwFlags", DWORD),
+                ("strProfileXml", (c_wchar * 1)),]
+
+
+WLAN_NOTIFICATION_DATA_ACM_TYPES_DICT = {
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_autoconf_enabled: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_autoconf_disabled: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_background_scan_enabled: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_background_scan_disabled: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_bss_type_change: DOT11_BSS_TYPE,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_power_setting_change: None,  # TODO: Change to WLAN_POWER_SETTING
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_scan_complete: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_scan_fail: WLAN_REASON_CODE,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_connection_start: WLAN_CONNECTION_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_connection_complete: WLAN_CONNECTION_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_connection_attempt_fail: WLAN_CONNECTION_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_filter_list_change: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_interface_arrival: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_interface_removal: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_profile_change: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_profile_name_change: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_profiles_exhausted: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_network_not_available: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_network_available: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_disconnecting: WLAN_CONNECTION_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_disconnected: WLAN_CONNECTION_NOTIFICATION_DATA,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_adhoc_network_state_change: None,  # TODO: Change to WLAN_ADHOC_NETWORK_STATE
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_profile_unblocked: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_screen_power_change: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_profile_blocked: None,
+    WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_scan_list_refresh: None,
+}
 
 def WlanRegisterNotification(hClientHandle, callback):
     """

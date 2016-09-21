@@ -184,6 +184,25 @@ class MSMNotificationData(object):
         result += "MAC: %s\n" % self.mac_addr
         return result
 
+class ACMConnectionNotificationData(object):
+    def __init__(self, acm_notification_data):
+        assert isinstance(acm_notification_data, WLAN_CONNECTION_NOTIFICATION_DATA)
+
+        self.connection_mode = WLAN_CONNECTION_MODE_KV[acm_notification_data.wlanConnectionMode]
+        self.profile_name = acm_notification_data.strProfileName
+        self.ssid = acm_notification_data.dot11Ssid.SSID[:acm_notification_data.dot11Ssid.SSIDLength]
+        self.bss_type = DOT11_BSS_TYPE_DICT_KV[acm_notification_data.dot11BssType]
+        self.security_enabled = acm_notification_data.bSecurityEnabled
+
+    def __str__(self):
+        result = ""
+        result += "Connection Mode: %s\n" % self.connection_mode
+        result += "Profile Name: %s\n" % self.profile_name
+        result += "SSID: %s\n" % self.ssid
+        result += "BSS Type: %s\n" % self.bss_type
+        result += "Security Enabled: %r\n" % bool(self.security_enabled)
+        return result
+
 def getWirelessInterfaces():
     """Returns a list of WirelessInterface objects based on the wireless
        interfaces available."""
@@ -475,6 +494,9 @@ class WlanEvent(object):
                 data = WlanEvent.parse_data(actual.pData, actual.dwDataSize, actual.NotificationSource, code)
                 if isinstance(data, WLAN_MSM_NOTIFICATION_DATA):
                     data = MSMNotificationData(data)
+                if isinstance(data, WLAN_CONNECTION_NOTIFICATION_DATA):
+                    data = ACMConnectionNotificationData(data)
+
                 event = WlanEvent(actual,
                                   WLAN_NOTIFICATION_SOURCE_DICT[actual.NotificationSource],
                                   code.name,
@@ -486,10 +508,15 @@ class WlanEvent(object):
 
     @staticmethod
     def parse_data(data_pointer, data_size, source, code):
-        if data_size == 0 or source != WLAN_NOTIFICATION_SOURCE_MSM:
+        if data_size == 0 or (source != WLAN_NOTIFICATION_SOURCE_MSM and source != WLAN_NOTIFICATION_SOURCE_ACM):
             return None
 
-        typ = WLAN_NOTIFICATION_DATA_MSM_TYPES_DICT[code]
+        if source == WLAN_NOTIFICATION_SOURCE_MSM:
+            typ = WLAN_NOTIFICATION_DATA_MSM_TYPES_DICT[code]
+        elif source == WLAN_NOTIFICATION_SOURCE_ACM:
+            typ = WLAN_NOTIFICATION_DATA_ACM_TYPES_DICT[code]
+        else:
+            return None
 
         if typ is None:
             return None
