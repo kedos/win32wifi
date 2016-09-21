@@ -22,16 +22,13 @@ import sys
 
 sys.path.append('../')
 
-from win32wifi.Win32NativeWifiApi import WLAN_INTF_OPCODE_DICT
-from win32wifi.Win32Wifi import getWirelessInterfaces
-from win32wifi.Win32Wifi import queryInterface
-
+from win32wifi import Win32Wifi
 
 if __name__ == "__main__":
-    ifaces = getWirelessInterfaces()
+    ifaces = Win32Wifi.getWirelessInterfaces()
     pp = pprint.PrettyPrinter(indent=4)
     for iface in ifaces:
         guid = iface.guid
-        res = queryInterface(iface, "current_connection")  # wlan_intf_opcode_current_connection
+        res = Win32Wifi.queryInterface(iface, "current_connection")  # wlan_intf_opcode_current_connection
         pp.pprint(res[1])
         

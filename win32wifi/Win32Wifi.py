@@ -25,6 +25,7 @@ from datetime import datetime
 from enum import Enum
 import functools
 import time
+import xmltodict
 
 from comtypes import GUID
 from win32wifi.Win32NativeWifiApi import *
@@ -114,7 +115,7 @@ class WirelessNetworkBss(object):
         data_type = (c_char * bss_entry.IeSize)
         ie_buffer = data_type.from_address(bss_entry_pointer + ie_offset)
         for byte in ie_buffer:
-            self.raw_information_elements += byte
+            self.raw_information_elements += str(byte)
 
     def __process_information_elements2(self):
         MINIMAL_IE_SIZE = 3
@@ -155,6 +156,12 @@ class WirelessProfile(object):
         self.name = wireless_profile.ProfileName
         self.flags = wireless_profile.Flags
         self.xml = xml
+
+        self._parse_xml(self.xml)
+
+    def _parse_xml(self, xml):
+        d = xmltodict.parse(xml)
+        self.ssid = d['WLANProfile']['SSIDConfig']['SSID']['name']
 
     def __str__(self):
         result = ""
@@ -272,7 +279,7 @@ def getWirelessProfileXML(wireless_interface, profile_name):
     WlanFreeMemory(xml_data)
     WlanCloseHandle(handle)
     return xml
-    
+
 
 def getWirelessProfiles(wireless_interface):
     """Returns a list of WirelessProfile objects based on the wireless
