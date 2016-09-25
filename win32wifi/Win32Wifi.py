@@ -557,4 +557,5 @@ def registerNotification(callback):
 def unregisterAllNotifications():
     for handle in global_handles:
         WlanCloseHandle(handle)
+    del global_handles[:]
     del global_callbacks[:]
