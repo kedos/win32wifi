@@ -180,7 +180,7 @@ class MSMNotificationData(object):
         self.profile_name = msm_notification_data.strProfileName
         self.ssid = msm_notification_data.dot11Ssid.SSID[:msm_notification_data.dot11Ssid.SSIDLength]
         self.bss_type = DOT11_BSS_TYPE_DICT_KV[msm_notification_data.dot11BssType]
-        self.mac_addr = ":".join([hex(x)[2:] for x in msm_notification_data.dot11MacAddr[:6]])
+        self.mac_addr = ":".join(["{:02x}".format(x) for x in msm_notification_data.dot11MacAddr[:6]])
 
     def __str__(self):
         result = ""
