@@ -544,15 +544,40 @@ def OnWlanNotification(callback, wlan_notification_data, p):
     if event != None:
         callback(event)
 
+
 global_callbacks = []
 global_handles = []
+
+
+class NotificationObject(object):
+    def __init__(self, handle, callback):
+        self.handle = handle
+        self.callback = callback
 
 
 def registerNotification(callback):
     handle = WlanOpenHandle()
 
-    global_callbacks.append(WlanRegisterNotification(handle, functools.partial(OnWlanNotification, callback)))
+    c_back = WlanRegisterNotification(handle, functools.partial(OnWlanNotification, callback))
+    global_callbacks.append(c_back)
     global_handles.append(handle)
+
+    return NotificationObject(handle, c_back)
+
+
+def unregisterNotification(notification_object):
+    # TODO: Instead of enumerating on the global lists, just save
+    # the NotificationObject-s in some list or dict.
+    WlanCloseHandle(notification_object.handle)
+
+    for i, h in enumerate(global_handles):
+        if h == notification_object.handle:
+            del global_handles[i]
+
+    for i, c in enumerate(global_callbacks):
+        if c == notification_object.callback:
+            del global_callbacks[i]
+
 
 def unregisterAllNotifications():
     for handle in global_handles:

@@ -15,13 +15,13 @@ def main():
         print(iface.guid)
 
     print("Registering...")
-    registerNotification(demo)
+    notification_object = registerNotification(demo)
     print("Done.")
 
     event.wait()
 
     print("Unregistered Notification...")
-    unregisterAllNotifications()
+    unregisterNotification(notification_object)
     print("Done.")
 
 
