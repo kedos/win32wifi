@@ -12,7 +12,7 @@ with open(path.join(here, 'README.md')) as f:
 setup(
     name='win32wifi',
     packages=['win32wifi'],  # this must be the same as the name above
-    version='0.1.0',
+    version='0.1.1',
     description='Python Windows Wifi - !Still Under Development!',
     long_description=long_description,
     author='Shaked Gitelman',
