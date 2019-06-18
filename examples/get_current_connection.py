@@ -18,9 +18,6 @@
 #
 
 import pprint
-import sys
-
-sys.path.append('../')
 
 from win32wifi import Win32Wifi
 

@@ -20,12 +20,8 @@
 # Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
 
-import sys
-
-sys.path.append('../')
-
-from Win32Wifi import getWirelessInterfaces
-from Win32Wifi import getWirelessAvailableNetworkList
+from win32wifi.Win32Wifi import getWirelessInterfaces
+from win32wifi.Win32Wifi import getWirelessAvailableNetworkList
 
 if __name__ == "__main__":
     ifaces = getWirelessInterfaces()

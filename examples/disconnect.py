@@ -19,7 +19,6 @@
 
 import sys
 
-sys.path.append('../')
 
 from win32wifi.Win32Wifi import getWirelessInterfaces
 from win32wifi.Win32Wifi import getWirelessAvailableNetworkList

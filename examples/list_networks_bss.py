@@ -19,13 +19,8 @@
 # Author: Andres Blanco     (6e726d)    <6e726d@gmail.com>
 # Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
-
-import sys
-
-sys.path.append('../')
-
-from Win32Wifi import getWirelessInterfaces
-from Win32Wifi import getWirelessNetworkBssList
+from win32wifi.Win32Wifi import getWirelessInterfaces
+from win32wifi.Win32Wifi import getWirelessNetworkBssList
 
 if __name__ == "__main__":
     ifaces = getWirelessInterfaces()
