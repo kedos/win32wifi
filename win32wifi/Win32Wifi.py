@@ -389,11 +389,10 @@ def connect(wireless_interface, connection_params):
     cnxp.dot11BssType = DOT11_BSS_TYPE(bssType)
     # flags
     cnxp.dwFlags = DWORD(connection_params["flags"])
-    print(cnxp)
-    result = WlanConnect(handle,
-                wireless_interface.guid,
-                cnxp)
-    WlanCloseHandle(handle)
+    try:
+        result = WlanConnect(handle, wireless_interface.guid, cnxp)
+    finally:
+        WlanCloseHandle(handle)
     return result
 
 def dot11bssidToString(dot11Bssid):
