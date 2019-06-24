@@ -320,7 +320,7 @@ def disconnect(wireless_interface):
     finally:
         WlanCloseHandle(handle)
 
-# TODO(shaked): There is an error 87 when trying to connect to a wifi network.
+# TODO(shaked): There is an error 87 when trying to connect to a wifi network.  # @TODO - cfati: Check whether still applies.
 def connect(wireless_interface, connection_params):
     """
         The WlanConnect function attempts to connect to a specific network.
