@@ -315,8 +315,10 @@ def disconnect(wireless_interface):
     """
     """
     handle = WlanOpenHandle()
-    WlanDisconnect(handle, wireless_interface.guid)
-    WlanCloseHandle(handle)
+    try:
+        WlanDisconnect(handle, wireless_interface.guid)
+    finally:
+        WlanCloseHandle(handle)
 
 # TODO(shaked): There is an error 87 when trying to connect to a wifi network.
 def connect(wireless_interface, connection_params):
