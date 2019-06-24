@@ -607,7 +607,7 @@ WLAN_NOTIFICATION_DATA_ACM_TYPES_DICT = {
     WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_scan_list_refresh: None,
 }
 
-def WlanRegisterNotification(hClientHandle, callback):
+def WlanRegisterNotification(hClientHandle, callback, pCallbackContext=None):
     """
         The WlanRegisterNotification function is used to register and 
         unregister notifications on all wireless interfaces.
@@ -641,7 +641,6 @@ def WlanRegisterNotification(hClientHandle, callback):
     dwNotifSource = WLAN_NOTIFICATION_SOURCE_ALL
     bIgnoreDuplicate = True
     funcCallback = WLAN_NOTIFICATION_CALLBACK_M(callback)
-    pCallbackContext = None
     pdwPrevNotifSource = None
 
     result = func_ref(hClientHandle,
