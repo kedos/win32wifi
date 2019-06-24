@@ -345,8 +345,10 @@ def connect(wireless_interface, connection_params):
     connection_mode_int = WLAN_CONNECTION_MODE_VK[connection_mode]
     cnxp.wlanConnectionMode = WLAN_CONNECTION_MODE(connection_mode_int)
     # determine strProfile
-    if connection_mode == ('wlan_connection_mode_profile' or           # name
-                           'wlan_connection_mode_temporary_profile'):  # xml
+    if connection_mode in [
+                'wlan_connection_mode_profile',  # name
+                'wlan_connection_mode_temporary_profile'  # xml
+            ]:
         cnxp.strProfile = LPCWSTR(connection_params["profile"])
     else:
         cnxp.strProfile = NULL
