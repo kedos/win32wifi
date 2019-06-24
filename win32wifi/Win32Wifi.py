@@ -539,11 +539,11 @@ class WlanEvent(object):
         return self.notificationCode
 
 
-def OnWlanNotification(callback, wlan_notification_data, p):
+def OnWlanNotification(callback, wlan_notification_data, context):
     event = WlanEvent.from_wlan_notification_data(wlan_notification_data)
 
     if event != None:
-        callback(event)
+        callback(event, context)
 
 
 global_callbacks = []
@@ -556,10 +556,10 @@ class NotificationObject(object):
         self.callback = callback
 
 
-def registerNotification(callback):
+def registerNotification(callback, context=None):
     handle = WlanOpenHandle()
 
-    c_back = WlanRegisterNotification(handle, functools.partial(OnWlanNotification, callback))
+    c_back = WlanRegisterNotification(handle, functools.partial(OnWlanNotification, callback), context)
     global_callbacks.append(c_back)
     global_handles.append(handle)
 
