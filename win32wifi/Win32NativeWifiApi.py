@@ -674,7 +674,7 @@ def WlanOpenHandle():
     client_handle = HANDLE()
     result = func_ref(2, None, byref(negotiated_version), byref(client_handle))
     if result != ERROR_SUCCESS:
-        raise Exception("WlanOpenHandle failed.")
+        raise Exception("WlanOpenHandle failed.", result)
     return client_handle
 
 
@@ -692,7 +692,7 @@ def WlanCloseHandle(hClientHandle):
     func_ref.restype = DWORD
     result = func_ref(hClientHandle, None)
     if result != ERROR_SUCCESS:
-        raise Exception("WlanCloseHandle failed.")
+        raise Exception("WlanCloseHandle failed.", result)
     return result
 
 
@@ -729,7 +729,7 @@ def WlanEnumInterfaces(hClientHandle):
     wlan_ifaces = pointer(WLAN_INTERFACE_INFO_LIST())
     result = func_ref(hClientHandle, None, byref(wlan_ifaces))
     if result != ERROR_SUCCESS:
-        raise Exception("WlanEnumInterfaces failed.")
+        raise Exception("WlanEnumInterfaces failed.", result)
     return wlan_ifaces
 
 
@@ -756,7 +756,7 @@ def WlanScan(hClientHandle, pInterfaceGuid, ssid=""):
     if ssid:
         length = len(ssid)
         if length > DOT11_SSID_MAX_LENGTH:
-            raise Exception("SSIDs have a maximum length of 32 characters.")
+            raise Exception("SSIDs have a maximum length of 32 characters.", length)
         # data = tuple(ord(char) for char in ssid)
         data = ssid
         dot11_ssid = byref(DOT11_SSID(length, data))
@@ -769,7 +769,7 @@ def WlanScan(hClientHandle, pInterfaceGuid, ssid=""):
                       None,
                       None)
     if result != ERROR_SUCCESS:
-        raise Exception("WlanScan failed.")
+        raise Exception("WlanScan failed.", result)
     return result
 
 
@@ -816,7 +816,7 @@ def WlanGetNetworkBssList(hClientHandle, pInterfaceGuid):
                       None,
                       byref(wlan_bss_list))
     if result != ERROR_SUCCESS:
-        raise Exception("WlanGetNetworkBssList failed.")
+        raise Exception("WlanGetNetworkBssList failed.", result)
     return wlan_bss_list
 
 
@@ -847,7 +847,7 @@ def WlanGetAvailableNetworkList(hClientHandle, pInterfaceGuid):
                       None,
                       byref(wlan_available_network_list))
     if result != ERROR_SUCCESS:
-        raise Exception("WlanGetAvailableNetworkList failed.")
+        raise Exception("WlanGetAvailableNetworkList failed.", result)
     return wlan_available_network_list
 
 
@@ -875,7 +875,7 @@ def WlanGetProfileList(hClientHandle, pInterfaceGuid):
                       None,
                       byref(wlan_profile_info_list))
     if result != ERROR_SUCCESS:
-        raise Exception("WlanGetProfileList failed.")
+        raise Exception("WlanGetProfileList failed.", result)
     return wlan_profile_info_list
 
 
@@ -914,7 +914,7 @@ def WlanGetProfile(hClientHandle, pInterfaceGuid, profileName):
                       byref(flags),
                       byref(pdw_granted_access))
     if result != ERROR_SUCCESS:
-        raise Exception("WlanGetProfile failed.")
+        raise Exception("WlanGetProfile failed.", result)
     return xml
 
 def WlanDeleteProfile(hClientHandle, pInterfaceGuid, profileName):
@@ -1030,7 +1030,7 @@ def WlanConnect(hClientHandle, pInterfaceGuid, pConnectionParameters):
                       pointer(pConnectionParameters),
                       None)
     if result != ERROR_SUCCESS:
-        raise Exception("".join(["WlanConnect failed with error ", str(result)]))
+        raise Exception("".join(["WlanConnect failed with error ", str(result)]), result)
     return result
 
 def WlanDisconnect(hClientHandle, pInterfaceGuid):
@@ -1045,7 +1045,7 @@ def WlanDisconnect(hClientHandle, pInterfaceGuid):
                       byref(pInterfaceGuid),
                       None)
     if result != ERROR_SUCCESS:
-        raise Exception("WlanDisconnect failed.")
+        raise Exception("WlanDisconnect failed.", result)
     return result
 
 WLAN_INTF_OPCODE = c_uint
@@ -1182,6 +1182,6 @@ def WlanQueryInterface(hClientHandle, pInterfaceGuid, OpCode):
                       ppData,
                       pWlanOpcodeValueType)
     if result != ERROR_SUCCESS:
-        raise Exception("WlanQueryInterface failed.")
+        raise Exception("WlanQueryInterface failed.", result)
     return ppData
 
