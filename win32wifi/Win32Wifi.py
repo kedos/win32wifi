@@ -316,10 +316,12 @@ def disconnect(wireless_interface):
     """
     """
     handle = WlanOpenHandle()
-    WlanDisconnect(handle, wireless_interface.guid)
-    WlanCloseHandle(handle)
+    try:
+        WlanDisconnect(handle, wireless_interface.guid)
+    finally:
+        WlanCloseHandle(handle)
 
-# TODO(shaked): There is an error 87 when trying to connect to a wifi network.
+# TODO(shaked): There is an error 87 when trying to connect to a wifi network.  # @TODO - cfati: Check whether still applies.
 def connect(wireless_interface, connection_params):
     """
         The WlanConnect function attempts to connect to a specific network.
@@ -346,8 +348,10 @@ def connect(wireless_interface, connection_params):
     connection_mode_int = WLAN_CONNECTION_MODE_VK[connection_mode]
     cnxp.wlanConnectionMode = WLAN_CONNECTION_MODE(connection_mode_int)
     # determine strProfile
-    if connection_mode == ('wlan_connection_mode_profile' or           # name
-                           'wlan_connection_mode_temporary_profile'):  # xml
+    if connection_mode in [
+                'wlan_connection_mode_profile',  # name
+                'wlan_connection_mode_temporary_profile'  # xml
+            ]:
         cnxp.strProfile = LPCWSTR(connection_params["profile"])
     else:
         cnxp.strProfile = NULL
@@ -388,11 +392,10 @@ def connect(wireless_interface, connection_params):
     cnxp.dot11BssType = DOT11_BSS_TYPE(bssType)
     # flags
     cnxp.dwFlags = DWORD(connection_params["flags"])
-    print(cnxp)
-    result = WlanConnect(handle,
-                wireless_interface.guid,
-                cnxp)
-    WlanCloseHandle(handle)
+    try:
+        result = WlanConnect(handle, wireless_interface.guid, cnxp)
+    finally:
+        WlanCloseHandle(handle)
     return result
 
 def dot11bssidToString(dot11Bssid):
@@ -539,11 +542,11 @@ class WlanEvent(object):
         return self.notificationCode
 
 
-def OnWlanNotification(callback, wlan_notification_data, p):
+def OnWlanNotification(callback, wlan_notification_data, context):
     event = WlanEvent.from_wlan_notification_data(wlan_notification_data)
 
     if event != None:
-        callback(event)
+        callback(event, context)
 
 
 global_callbacks = []
@@ -556,10 +559,10 @@ class NotificationObject(object):
         self.callback = callback
 
 
-def registerNotification(callback):
+def registerNotification(callback, context=None):
     handle = WlanOpenHandle()
 
-    c_back = WlanRegisterNotification(handle, functools.partial(OnWlanNotification, callback))
+    c_back = WlanRegisterNotification(handle, functools.partial(OnWlanNotification, callback), context)
     global_callbacks.append(c_back)
     global_handles.append(handle)
 
