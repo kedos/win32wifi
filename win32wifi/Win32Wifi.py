@@ -104,18 +104,19 @@ class WirelessNetworkBss(object):
         self.bss_type = DOT11_BSS_TYPE_DICT_KV[bss_entry.dot11BssType]
         self.phy_type = DOT11_PHY_TYPE_DICT[bss_entry.dot11BssPhyType]
         self.rssi = bss_entry.Rssi
+        self.ch_center_frequency = bss_entry.ChCenterFrequency
         self.capabilities = bss_entry.CapabilityInformation
         self.__process_information_elements(bss_entry)
         self.__process_information_elements2()
 
     def __process_information_elements(self, bss_entry):
-        self.raw_information_elements = ""
+        self.raw_information_elements = []
         bss_entry_pointer = addressof(bss_entry)
         ie_offset = bss_entry.IeOffset
         data_type = (c_char * bss_entry.IeSize)
         ie_buffer = data_type.from_address(bss_entry_pointer + ie_offset)
         for byte in ie_buffer:
-            self.raw_information_elements += str(byte)
+            self.raw_information_elements.append(byte)
 
     def __process_information_elements2(self):
         MINIMAL_IE_SIZE = 3
@@ -261,10 +262,10 @@ def getWirelessAvailableNetworkList(wireless_interface):
     num = network_list.contents.NumberOfItems
     network_pointer = addressof(network_list.contents.Network)
     networks_list = (data_type * num).from_address(network_pointer)
-    
+
     for network in networks_list:
         networks.append(WirelessNetwork(network))
-    
+
     WlanFreeMemory(network_list)
     WlanCloseHandle(handle)
     return networks
