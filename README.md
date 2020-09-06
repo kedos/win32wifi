@@ -1,21 +1,17 @@
-#########################################################################
-win32wifi (Python Windows Wifi)
-#########################################################################
+# win32wifi (Python Windows Wifi)
 
 win32wifi is a set of Python bindings for the Windows Native Wifi API.
 
 The Native Wifi API is designed for C/C++ developers. Programmers should be
 familiar with wireless networking concepts and terminology.
 
-Authors
-==============
+## Authors
 
 Andres Blanco 	(6e726d)
 
 Shaked Gitelman (almondg)
 
-License
-==============
+## License
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -30,7 +26,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-References
-==============
+## References
 
  - Windows Native Wifi API -- http://msdn.microsoft.com/en-us/library/windows/desktop/ms706556(v=vs.85).aspx

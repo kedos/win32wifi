@@ -19,11 +19,9 @@
 
 import sys
 
-sys.path.append('../')
-
-from Win32Wifi import deleteProfile
-from Win32Wifi import getWirelessInterfaces
-from Win32Wifi import getWirelessProfiles
+from win32wifi.Win32Wifi import deleteProfile
+from win32wifi.Win32Wifi import getWirelessInterfaces
+from win32wifi.Win32Wifi import getWirelessProfiles
 
 
 def listProfiles(iface):
@@ -33,6 +31,7 @@ def listProfiles(iface):
         print(profile.name)
         print("-" * 20)
 
+
 def delProfile(iface, profile_name):
     try:
         deleteProfile(iface, profile_name)
@@ -41,7 +40,7 @@ def delProfile(iface, profile_name):
             print("Profile '%s' does not exist." % profile_name)
         else:
             raise e
-    
+
 
 if __name__ == "__main__":
 
@@ -51,11 +50,10 @@ if __name__ == "__main__":
 
     ifaces = getWirelessInterfaces()
 
-    for iface in ifaces:    
+    for iface in ifaces:
         if len(sys.argv) < 2:
             # No profile name. Just list available profiles.
             listProfiles(iface)
         else:
             # Delete the given profile.
             delProfile(iface, sys.argv[1])
-        
