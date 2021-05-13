@@ -940,6 +940,44 @@ def WlanDeleteProfile(hClientHandle, pInterfaceGuid, profileName):
         raise Exception("WlanDeleteProfile failed. error %d" % result, result)
     return result    
 
+def WlanSetProfile(hClientHandle, pInterfaceGuid, xml):
+    """
+        The WlanSetProfile function sets the content of a specific profile.
+
+        DWORD WlanSetProfile(
+            _In_         HANDLE     hClientHandle,
+            _In_         const GUID *pInterfaceGuid,
+            _In_         DWORD      dwFlags,
+            _In_         LPCWSTR    strProfileXml,
+            _In_         LPCWSTR    strAllUserProfileSecurity,
+            _In_         BOOL       bOverwrite,
+            _Reserved_   PVOID      pReserved,
+            _Out_        DWORD      *pdwReasonCode
+        );
+    """
+    func_ref = wlanapi.WlanSetProfile
+    func_ref.argtypes = [HANDLE,
+                         POINTER(GUID),
+                         DWORD,
+                         LPCWSTR,
+                         LPCWSTR,
+                         BOOL,
+                         c_void_p,
+                         POINTER(DWORD)]
+    func_ref.restype = DWORD
+    flags = DWORD(0)
+    pdw_reason_code = DWORD()
+    result = func_ref(hClientHandle,
+                      byref(pInterfaceGuid),
+                      flags,
+                      xml,
+                      None,
+                      BOOL(True),
+                      None,
+                      byref(pdw_reason_code))
+    if result != ERROR_SUCCESS:
+        raise Exception("WlanSetProfile failed.", result)
+    return pdw_reason_code
 
 class NDIS_OBJECT_HEADER(Structure):
     """
