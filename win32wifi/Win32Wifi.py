@@ -432,7 +432,7 @@ def queryInterface(wireless_interface, opcode_item):
         strProfileName = r.strProfileName
         aa = r.wlanAssociationAttributes
         wlanAssociationAttributes = {
-            "dot11Ssid": aa.dot11Ssid.SSID,
+            "dot11Ssid": aa.dot11Ssid.SSID.decode(),
             "dot11BssType": DOT11_BSS_TYPE_DICT_KV[aa.dot11BssType],
             "dot11Bssid": dot11bssidToString(aa.dot11Bssid),
             "dot11PhyType": DOT11_PHY_TYPE_DICT[aa.dot11PhyType],
