@@ -64,7 +64,7 @@ class InformationElement(object):
 
 class WirelessNetwork(object):
     def __init__(self, wireless_network):
-        self.ssid = wireless_network.dot11Ssid.SSID[:DOT11_SSID_MAX_LENGTH]
+        self.ssid = wireless_network.dot11Ssid.SSID[:DOT11_SSID_MAX_LENGTH].decode()
         self.profile_name = wireless_network.ProfileName
         self.bss_type = DOT11_BSS_TYPE_DICT_KV[wireless_network.dot11BssType]
         self.number_of_bssids = wireless_network.NumberOfBssids
