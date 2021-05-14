@@ -100,6 +100,8 @@ DOT11_AUTH_ALGORITHM_DICT = {1: "DOT11_AUTH_ALGO_80211_OPEN",
                              5: "DOT11_AUTH_ALGO_WPA_NONE",
                              6: "DOT11_AUTH_ALGO_RSNA",
                              7: "DOT11_AUTH_ALGO_RSNA_PSK",
+                             8: "DOT11_AUTH_ALGO_WPA3",
+                             9: "DOT11_AUTH_ALGO_WPA3_SAE",
                              0x80000000: "DOT11_AUTH_ALGO_IHV_START",
                              0xffffffff: "DOT11_AUTH_ALGO_IHV_END"}
 
