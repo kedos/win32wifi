@@ -312,11 +312,11 @@ def deleteProfile(wireless_interface, profile_name):
 
     return result
 
-def addProfile(wireless_interface, profile):
+def addProfile(wireless_interface, profile_xml):
     handle = WlanOpenHandle()
     result = WlanSetProfile(handle,
                             wireless_interface.guid,
-                            profile.xml)
+                            profile_xml)
     WlanCloseHandle(handle)
     return result
 
