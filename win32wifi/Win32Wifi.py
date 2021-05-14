@@ -98,7 +98,7 @@ class WirelessNetwork(object):
 
 class WirelessNetworkBss(object):
     def __init__(self, bss_entry):
-        self.ssid = bss_entry.dot11Ssid.SSID[:DOT11_SSID_MAX_LENGTH]
+        self.ssid = bss_entry.dot11Ssid.SSID[:DOT11_SSID_MAX_LENGTH].decode()
         self.link_quality = bss_entry.LinkQuality
         self.bssid = ":".join(map(lambda x: "%02X" % x, bss_entry.dot11Bssid))
         self.bss_type = DOT11_BSS_TYPE_DICT_KV[bss_entry.dot11BssType]
