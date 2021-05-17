@@ -26,6 +26,7 @@ from enum import Enum
 import functools
 import time
 import xmltodict
+from xml.dom import minidom
 
 from comtypes import GUID
 from win32wifi.Win32NativeWifiApi import *
@@ -163,6 +164,94 @@ class WirelessProfile(object):
     def _parse_xml(self, xml):
         d = xmltodict.parse(xml)
         self.ssid = d['WLANProfile']['SSIDConfig']['SSID']['name']
+
+    @staticmethod
+    def generate_xml(wireless_network, psk):
+
+        root = minidom.Document()
+        profile = root.createElement("WLANProfile")
+        profile.setAttribute("xmlns", "http://www.microsoft.com/networking/WLAN/profile/v1")
+        root.appendChild(profile)
+
+        name = root.createElement("name")
+        name.appendChild(root.createTextNode(wireless_network.ssid))
+        profile.appendChild(name)
+
+        ssid_config = root.createElement("SSIDConfig")
+        ssid = root.createElement("SSID")
+        ssid_hex = root.createElement("hex")
+        ssid_hex.appendChild(root.createTextNode(wireless_network.ssid.encode().hex().upper()))
+        ssid.appendChild(ssid_hex)
+        ssid_name = root.createElement("name")
+        ssid_name.appendChild(root.createTextNode(wireless_network.ssid))
+        ssid.appendChild(ssid_name)
+        ssid_config.appendChild(ssid)
+        profile.appendChild(ssid_config)
+
+        connection_type = root.createElement("connectionType")
+        connection_type_value = {
+            "dot11_BSS_type_infrastructure": "ESS",
+            "dot11_BSS_type_independent": "IBSS",
+            "dot11_BSS_type_any": "ESS"
+        }.get(wireless_network.bss_type)
+        connection_type.appendChild(root.createTextNode(connection_type_value))
+        profile.appendChild(connection_type)
+
+        connection_mode = root.createElement("connectionMode")
+        connection_mode.appendChild(root.createTextNode("manual"))
+        profile.appendChild(connection_mode)
+
+        msm = root.createElement("MSM")
+        security = root.createElement("security")
+        auth_encryption = root.createElement("authEncryption")
+        authentication = root.createElement("authentication")
+        authentication_value = {
+            "DOT11_AUTH_ALGO_80211_OPEN": "open",
+            "DOT11_AUTH_ALGO_80211_SHARED_KEY": "shared",
+            "DOT11_AUTH_ALGO_WPA": "WPA",
+            "DOT11_AUTH_ALGO_WPA_PSK": "WPAPSK",
+            "DOT11_AUTH_ALGO_WPA_NONE": "",
+            "DOT11_AUTH_ALGO_RSNA": "WPA2",
+            "DOT11_AUTH_ALGO_RSNA_PSK": "WPA2PSK",
+            "DOT11_AUTH_ALGO_WPA3": "WPA3",
+            "DOT11_AUTH_ALGO_WPA3_SAE": "WPA3PSK",
+            "DOT11_AUTH_ALGO_IHV_START": "",
+            "DOT11_AUTH_ALGO_IHV_END": ""
+        }.get(wireless_network.auth)
+        authentication.appendChild(root.createTextNode(authentication_value))
+        auth_encryption.appendChild(authentication)
+        encryption = root.createElement("encryption")
+        encryption_value = {
+            "DOT11_CIPHER_ALGO_NONE": "none",
+            "DOT11_CIPHER_ALGO_WEP40": "WEP",
+            "DOT11_CIPHER_ALGO_TKIP": "TKIP",
+            "DOT11_CIPHER_ALGO_CCMP": "AES",
+            "DOT11_CIPHER_ALGO_WEP104": "WEP",
+            "DOT11_CIPHER_ALGO_WPA_USE_GROUP": "",
+            "DOT11_CIPHER_ALGO_RSN_USE_GROUP": "",
+            "DOT11_CIPHER_ALGO_WEP": "WEP",
+            "DOT11_CIPHER_ALGO_IHV_START": "",
+            "DOT11_CIPHER_ALGO_IHV_END": ""
+        }.get(wireless_network.cipher)
+        encryption.appendChild(root.createTextNode(encryption_value))
+        auth_encryption.appendChild(encryption)
+        security.appendChild(auth_encryption)
+        if psk is not None:
+            shared_key = root.createElement("sharedKey")
+            key_type = root.createElement("keyType")
+            key_type.appendChild(root.createTextNode("passPhrase"))
+            shared_key.appendChild(key_type)
+            protected = root.createElement("protected")
+            protected.appendChild(root.createTextNode("false"))
+            shared_key.appendChild(protected)
+            key_material = root.createElement("keyMaterial")
+            key_material.appendChild(root.createTextNode(psk))
+            shared_key.appendChild(key_material)
+            security.appendChild(shared_key)
+        msm.appendChild(security)
+        profile.appendChild(msm)
+
+        return root.toprettyxml(indent="\t")
 
     def __str__(self):
         result = ""
