@@ -410,6 +410,13 @@ def addProfile(wireless_interface, profile_xml):
     WlanCloseHandle(handle)
     return result
 
+def scan(wireless_interface):
+    handle = WlanOpenHandle()
+    result = WlanScan(handle,
+                      wireless_interface.guid)
+    WlanCloseHandle(handle)
+    return result
+
 def disconnect(wireless_interface):
     """
     """
