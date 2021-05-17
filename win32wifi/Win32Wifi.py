@@ -227,6 +227,7 @@ class WirelessProfile(object):
             "DOT11_CIPHER_ALGO_TKIP": "TKIP",
             "DOT11_CIPHER_ALGO_CCMP": "AES",
             "DOT11_CIPHER_ALGO_WEP104": "WEP",
+            "DOT11_CIPHER_ALGO_BIP": "",
             "DOT11_CIPHER_ALGO_WPA_USE_GROUP": "",
             "DOT11_CIPHER_ALGO_RSN_USE_GROUP": "",
             "DOT11_CIPHER_ALGO_WEP": "WEP",
