@@ -301,9 +301,13 @@ class ACMConnectionNotificationData(object):
 
         self.connection_mode = WLAN_CONNECTION_MODE_KV[acm_notification_data.wlanConnectionMode]
         self.profile_name = acm_notification_data.strProfileName
-        self.ssid = acm_notification_data.dot11Ssid.SSID[:acm_notification_data.dot11Ssid.SSIDLength]
+        self.ssid = acm_notification_data.dot11Ssid.SSID[:acm_notification_data.dot11Ssid.SSIDLength].decode()
         self.bss_type = DOT11_BSS_TYPE_DICT_KV[acm_notification_data.dot11BssType]
         self.security_enabled = acm_notification_data.bSecurityEnabled
+        self.reason_code = acm_notification_data.wlanReasonCode
+        reason_message_p = create_unicode_buffer(256)
+        WlanReasonCodeToString(acm_notification_data.wlanReasonCode, 256, reason_message_p)
+        self.reason_message = reason_message_p.value
 
     def __str__(self):
         result = ""
@@ -312,6 +316,7 @@ class ACMConnectionNotificationData(object):
         result += "SSID: %s\n" % self.ssid
         result += "BSS Type: %s\n" % self.bss_type
         result += "Security Enabled: %r\n" % bool(self.security_enabled)
+        result += "Reason Code: %s\n" % self.reason_code
         return result
 
 def getWirelessInterfaces():

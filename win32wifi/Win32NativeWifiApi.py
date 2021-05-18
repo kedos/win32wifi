@@ -612,6 +612,29 @@ WLAN_NOTIFICATION_DATA_ACM_TYPES_DICT = {
     WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_scan_list_refresh: None,
 }
 
+def WlanReasonCodeToString(dwReasonCode, dwBufferSize, pStringBuffer):
+    """
+        The WlanReasonCodeToString function retrieves a string that describes a specified reason code.
+
+        DWORD WlanReasonCodeToString(
+          DWORD  dwReasonCode,
+          DWORD  dwBufferSize,
+          PWCHAR pStringBuffer,
+          PVOID  pReserved
+        );
+    """
+    func_ref = wlanapi.WlanReasonCodeToString
+    func_ref.argtypes = [DWORD,
+                         DWORD,
+                         c_wchar_p,
+                         c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(dwReasonCode,
+                      dwBufferSize,
+                      pStringBuffer,
+                      None)
+    return result
+
 def WlanRegisterNotification(hClientHandle, callback, pCallbackContext=None):
     """
         The WlanRegisterNotification function is used to register and 
