@@ -106,6 +106,7 @@ class WirelessNetworkBss(object):
         self.phy_type = DOT11_PHY_TYPE_DICT[bss_entry.dot11BssPhyType]
         self.rssi = bss_entry.Rssi
         self.ch_center_frequency = bss_entry.ChCenterFrequency
+        self.channel = self.frequency_to_channel(self.ch_center_frequency)
         self.capabilities = bss_entry.CapabilityInformation
         self.__process_information_elements(bss_entry)
         self.__process_information_elements2()
@@ -133,6 +134,18 @@ class WirelessNetworkBss(object):
             index += length
             ie = InformationElement(eid, length, body)
             self.information_elements.append(ie)
+
+    @staticmethod
+    def frequency_to_channel(frequency):
+        frequency = frequency / 1000
+        channel = 0
+        if frequency == 2484:
+            channel = 14
+        elif frequency < 2484:
+            channel = (frequency - 2407) / 5
+        else:
+            channel = (frequency / 5) - 1000
+        return int(channel)
 
     def __str__(self):
         result = ""
