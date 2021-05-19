@@ -570,6 +570,10 @@ def queryInterface(wireless_interface, opcode_item):
             "wlanAssociationAttributes": wlanAssociationAttributes,
             "wlanSecurityAttributes": wlanSecurityAttributes,
         }
+    elif opcode_item == "channel_number":
+        ext_out = {
+            "channel": r.value
+        }
     else:
         ext_out = None
     return result.contents, ext_out
