@@ -249,6 +249,9 @@ class WirelessProfile(object):
         }.get(wireless_network.cipher)
         encryption.appendChild(root.createTextNode(encryption_value))
         auth_encryption.appendChild(encryption)
+        use_one_x = root.createElement("useOneX")
+        use_one_x.appendChild(root.createTextNode("false"))
+        auth_encryption.appendChild(use_one_x)
         security.appendChild(auth_encryption)
         if psk is not None:
             shared_key = root.createElement("sharedKey")
