@@ -227,7 +227,7 @@ class WirelessProfile(object):
             "DOT11_AUTH_ALGO_RSNA": "WPA2",
             "DOT11_AUTH_ALGO_RSNA_PSK": "WPA2PSK",
             "DOT11_AUTH_ALGO_WPA3": "WPA3",
-            "DOT11_AUTH_ALGO_WPA3_SAE": "WPA3PSK",
+            "DOT11_AUTH_ALGO_WPA3_SAE": "WPA3SAE",
             "DOT11_AUTH_ALGO_IHV_START": "",
             "DOT11_AUTH_ALGO_IHV_END": ""
         }.get(wireless_network.auth)
