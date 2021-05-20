@@ -110,6 +110,7 @@ class WirelessNetworkBss(object):
         self.capabilities = bss_entry.CapabilityInformation
         self.__process_information_elements(bss_entry)
         self.__process_information_elements2()
+        self.channel_width = self.get_channel_width(self.information_elements)
 
     def __process_information_elements(self, bss_entry):
         self.raw_information_elements = []
@@ -146,6 +147,46 @@ class WirelessNetworkBss(object):
         else:
             channel = (frequency / 5) - 1000
         return int(channel)
+
+    @staticmethod
+    def get_channel_width(information_elements):
+
+        channel_width = 20
+
+        ht_operation = None
+        vht_operation = None
+        extension_tag = None
+        for ie in information_elements:
+            if ie.element_id == 61:
+                ht_operation = ie
+            elif ie.element_id == 192:
+                vht_operation = ie
+            elif ie.element_id == 255:
+                extension_tag = ie
+
+        if ht_operation:
+            secondary_channel_offset = ht_operation.body[1][0] & ((1 << 1) | (1 << 0))
+            if secondary_channel_offset != 0:
+                channel_width = 40
+
+        if vht_operation:
+            vht_channel_width = vht_operation.body[0][0]
+            channel_center_frequency_segment_1 = vht_operation.body[2][0]
+            if vht_channel_width == 1:
+                channel_width = 80
+                if channel_center_frequency_segment_1 != 0:
+                    channel_width = 160
+
+        if extension_tag:
+            bw_40_80 = (extension_tag.body[7][0] & (1 << 2) != 0)
+            bw_160 = (extension_tag.body[7][0] & (1 << 3) != 0)
+            bw_160_80_p_80 = (extension_tag.body[7][0] & (1 << 4) != 0)
+            if bw_40_80:
+                channel_width = 80
+            if bw_160 or bw_160_80_p_80:
+                channel_width = 160
+
+        return channel_width
 
     def __str__(self):
         result = ""
