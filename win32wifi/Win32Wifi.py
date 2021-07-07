@@ -155,14 +155,11 @@ class WirelessNetworkBss(object):
 
         ht_operation = None
         vht_operation = None
-        extension_tag = None
         for ie in information_elements:
             if ie.element_id == 61:
                 ht_operation = ie
             elif ie.element_id == 192:
                 vht_operation = ie
-            elif ie.element_id == 255:
-                extension_tag = ie
 
         if ht_operation:
             secondary_channel_offset = ht_operation.body[1][0] & ((1 << 1) | (1 << 0))
@@ -176,15 +173,6 @@ class WirelessNetworkBss(object):
                 channel_width = 80
                 if channel_center_frequency_segment_1 != 0:
                     channel_width = 160
-
-        if extension_tag:
-            bw_40_80 = (extension_tag.body[7][0] & (1 << 2) != 0)
-            bw_160 = (extension_tag.body[7][0] & (1 << 3) != 0)
-            bw_160_80_p_80 = (extension_tag.body[7][0] & (1 << 4) != 0)
-            if bw_40_80:
-                channel_width = 80
-            if bw_160 or bw_160_80_p_80:
-                channel_width = 160
 
         return channel_width
 
