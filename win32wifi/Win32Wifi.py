@@ -357,18 +357,20 @@ def getWirelessInterfaces():
     interfaces_list = []
     handle = WlanOpenHandle()
     wlan_ifaces = WlanEnumInterfaces(handle)
-    # Handle the WLAN_INTERFACE_INFO_LIST pointer to get a list of
-    # WLAN_INTERFACE_INFO structures.
-    data_type = wlan_ifaces.contents.InterfaceInfo._type_
-    num = wlan_ifaces.contents.NumberOfItems
-    ifaces_pointer = addressof(wlan_ifaces.contents.InterfaceInfo)
-    wlan_interface_info_list = (data_type * num).from_address(ifaces_pointer)
-    for wlan_interface_info in wlan_interface_info_list:
-        wlan_iface = WirelessInterface(wlan_interface_info)
-        interfaces_list.append(wlan_iface)
-    WlanFreeMemory(wlan_ifaces)
-    WlanCloseHandle(handle)
-    return interfaces_list
+    try:
+        # Handle the WLAN_INTERFACE_INFO_LIST pointer to get a list of
+        # WLAN_INTERFACE_INFO structures.
+        data_type = wlan_ifaces.contents.InterfaceInfo._type_
+        num = wlan_ifaces.contents.NumberOfItems
+        ifaces_pointer = addressof(wlan_ifaces.contents.InterfaceInfo)
+        wlan_interface_info_list = (data_type * num).from_address(ifaces_pointer)
+        for wlan_interface_info in wlan_interface_info_list:
+            wlan_iface = WirelessInterface(wlan_interface_info)
+            interfaces_list.append(wlan_iface)
+        return interfaces_list
+    finally:
+        WlanFreeMemory(wlan_ifaces)
+        WlanCloseHandle(handle)
 
 
 def getWirelessNetworkBssList(wireless_interface):
@@ -377,17 +379,19 @@ def getWirelessNetworkBssList(wireless_interface):
     networks = []
     handle = WlanOpenHandle()
     bss_list = WlanGetNetworkBssList(handle, wireless_interface.guid)
-    # Handle the WLAN_BSS_LIST pointer to get a list of WLAN_BSS_ENTRY
-    # structures.
-    data_type = bss_list.contents.wlanBssEntries._type_
-    num = bss_list.contents.NumberOfItems
-    bsss_pointer = addressof(bss_list.contents.wlanBssEntries)
-    bss_entries_list = (data_type * num).from_address(bsss_pointer)
-    for bss_entry in bss_entries_list:
-        networks.append(WirelessNetworkBss(bss_entry))
-    WlanFreeMemory(bss_list)
-    WlanCloseHandle(handle)
-    return networks
+    try:
+        # Handle the WLAN_BSS_LIST pointer to get a list of WLAN_BSS_ENTRY
+        # structures.
+        data_type = bss_list.contents.wlanBssEntries._type_
+        num = bss_list.contents.NumberOfItems
+        bsss_pointer = addressof(bss_list.contents.wlanBssEntries)
+        bss_entries_list = (data_type * num).from_address(bsss_pointer)
+        for bss_entry in bss_entries_list:
+            networks.append(WirelessNetworkBss(bss_entry))
+        return networks
+    finally:
+        WlanFreeMemory(bss_list)
+        WlanCloseHandle(handle)
 
 
 def getWirelessAvailableNetworkList(wireless_interface):
@@ -396,19 +400,21 @@ def getWirelessAvailableNetworkList(wireless_interface):
     networks = []
     handle = WlanOpenHandle()
     network_list = WlanGetAvailableNetworkList(handle, wireless_interface.guid)
-    # Handle the WLAN_AVAILABLE_NETWORK_LIST pointer to get a list of
-    # WLAN_AVAILABLE_NETWORK structures.
-    data_type = network_list.contents.Network._type_
-    num = network_list.contents.NumberOfItems
-    network_pointer = addressof(network_list.contents.Network)
-    networks_list = (data_type * num).from_address(network_pointer)
+    try:
+        # Handle the WLAN_AVAILABLE_NETWORK_LIST pointer to get a list of
+        # WLAN_AVAILABLE_NETWORK structures.
+        data_type = network_list.contents.Network._type_
+        num = network_list.contents.NumberOfItems
+        network_pointer = addressof(network_list.contents.Network)
+        networks_list = (data_type * num).from_address(network_pointer)
 
-    for network in networks_list:
-        networks.append(WirelessNetwork(network))
+        for network in networks_list:
+            networks.append(WirelessNetwork(network))
 
-    WlanFreeMemory(network_list)
-    WlanCloseHandle(handle)
-    return networks
+        return networks
+    finally:
+        WlanFreeMemory(network_list)
+        WlanCloseHandle(handle)
 
 
 def getWirelessProfileXML(wireless_interface, profile_name):
@@ -416,10 +422,12 @@ def getWirelessProfileXML(wireless_interface, profile_name):
     xml_data = WlanGetProfile(handle,
                               wireless_interface.guid,
                               LPCWSTR(profile_name))
-    xml = xml_data.value
-    WlanFreeMemory(xml_data)
-    WlanCloseHandle(handle)
-    return xml
+    try:
+        xml = xml_data.value
+        return xml
+    finally:
+        WlanFreeMemory(xml_data)
+        WlanCloseHandle(handle)
 
 
 def getWirelessProfiles(wireless_interface):
@@ -428,44 +436,51 @@ def getWirelessProfiles(wireless_interface):
     profiles = []
     handle = WlanOpenHandle()
     profile_list = WlanGetProfileList(handle, wireless_interface.guid)
-    # Handle the WLAN_PROFILE_INFO_LIST pointer to get a list of
-    # WLAN_PROFILE_INFO structures.
-    data_type = profile_list.contents.ProfileInfo._type_
-    num = profile_list.contents.NumberOfItems
-    profile_info_pointer = addressof(profile_list.contents.ProfileInfo)
-    profiles_list = (data_type * num).from_address(profile_info_pointer)
-    xml_data = None  # safety: there may be no profiles
-    for profile in profiles_list:
-        xml_data = WlanGetProfile(handle,
-                                  wireless_interface.guid,
-                                  profile.ProfileName)
-        profiles.append(WirelessProfile(profile, xml_data.value))
-    WlanFreeMemory(xml_data)
-    WlanFreeMemory(profile_list)
-    WlanCloseHandle(handle)
-    return profiles
+    try:
+        # Handle the WLAN_PROFILE_INFO_LIST pointer to get a list of
+        # WLAN_PROFILE_INFO structures.
+        data_type = profile_list.contents.ProfileInfo._type_
+        num = profile_list.contents.NumberOfItems
+        profile_info_pointer = addressof(profile_list.contents.ProfileInfo)
+        profiles_list = (data_type * num).from_address(profile_info_pointer)
+        xml_data = None  # safety: there may be no profiles
+        for profile in profiles_list:
+            xml_data = WlanGetProfile(handle,
+                                      wireless_interface.guid,
+                                      profile.ProfileName)
+            profiles.append(WirelessProfile(profile, xml_data.value))
+            WlanFreeMemory(xml_data)
+        return profiles
+    finally:
+        WlanFreeMemory(profile_list)
+        WlanCloseHandle(handle)
 
 def deleteProfile(wireless_interface, profile_name):
     handle = WlanOpenHandle()
-    result = WlanDeleteProfile(handle, wireless_interface.guid, profile_name)
-    WlanCloseHandle(handle)
-
-    return result
+    try:
+        result = WlanDeleteProfile(handle, wireless_interface.guid, profile_name)
+        return result
+    finally:
+        WlanCloseHandle(handle)
 
 def addProfile(wireless_interface, profile_xml):
     handle = WlanOpenHandle()
-    result = WlanSetProfile(handle,
-                            wireless_interface.guid,
-                            profile_xml)
-    WlanCloseHandle(handle)
-    return result
+    try:
+        result = WlanSetProfile(handle,
+                                wireless_interface.guid,
+                                profile_xml)
+        return result
+    finally:
+        WlanCloseHandle(handle)
 
 def scan(wireless_interface):
     handle = WlanOpenHandle()
-    result = WlanScan(handle,
-                      wireless_interface.guid)
-    WlanCloseHandle(handle)
-    return result
+    try:
+        result = WlanScan(handle,
+                          wireless_interface.guid)
+        return result
+    finally:
+        WlanCloseHandle(handle)
 
 def disconnect(wireless_interface):
     """
@@ -498,60 +513,61 @@ def connect(wireless_interface, connection_params):
         * Currently, only the name string is supported here.
     """
     handle = WlanOpenHandle()
-    cnxp = WLAN_CONNECTION_PARAMETERS()
-    connection_mode = connection_params["connectionMode"]
-    connection_mode_int = WLAN_CONNECTION_MODE_VK[connection_mode]
-    cnxp.wlanConnectionMode = WLAN_CONNECTION_MODE(connection_mode_int)
-    # determine strProfile
-    if connection_mode in [
-                'wlan_connection_mode_profile',  # name
-                'wlan_connection_mode_temporary_profile'  # xml
-            ]:
-        cnxp.strProfile = LPCWSTR(connection_params["profile"])
-    else:
-        cnxp.strProfile = NULL
-    # ssid
-    if connection_params["ssid"] is not None:
-        dot11Ssid = DOT11_SSID()
-        dot11Ssid.SSID = connection_params["ssid"]
-        dot11Ssid.SSIDLength = len(connection_params["ssid"])
-        cnxp.pDot11Ssid = pointer(dot11Ssid)
-    else:
-        cnxp.pDot11Ssid = NULL
-    # bssidList
-    # NOTE: Before this can actually support multiple entries,
-    #   the DOT11_BSSID_LIST structure must be rewritten to
-    #   dynamically resize itself based on input.
-    if connection_params["bssidList"] is not None:
-        bssids = []
-        for bssidish in connection_params["bssidList"]:
-            bssidish = tuple(int(n, 16) for n in bssidish.split(b":"))
-            bssids.append((DOT11_MAC_ADDRESS)(*bssidish))
-        bssidListEntries = c_ulong(len(bssids))
-        bssids = (DOT11_MAC_ADDRESS * len(bssids))(*bssids)
-        bssidListHeader = NDIS_OBJECT_HEADER()
-        bssidListHeader.Type = NDIS_OBJECT_TYPE_DEFAULT
-        bssidListHeader.Revision = DOT11_BSSID_LIST_REVISION_1 # chr()
-        bssidListHeader.Size = c_ushort(sizeof(DOT11_BSSID_LIST))
-        bssidList = DOT11_BSSID_LIST()
-        bssidList.Header = bssidListHeader
-        bssidList.uNumOfEntries = bssidListEntries
-        bssidList.uTotalNumOfEntries = bssidListEntries
-        bssidList.BSSIDs = bssids
-        cnxp.pDesiredBssidList = pointer(bssidList)
-    else:
-        cnxp.pDesiredBssidList = NULL # required for XP
-    # look up bssType
-    # bssType must match type from profile if a profile is provided
-    bssType = DOT11_BSS_TYPE_DICT_VK[connection_params["bssType"]]
-    cnxp.dot11BssType = DOT11_BSS_TYPE(bssType)
-    # flags
-    cnxp.dwFlags = DWORD(connection_params["flags"])
     try:
+        cnxp = WLAN_CONNECTION_PARAMETERS()
+        connection_mode = connection_params["connectionMode"]
+        connection_mode_int = WLAN_CONNECTION_MODE_VK[connection_mode]
+        cnxp.wlanConnectionMode = WLAN_CONNECTION_MODE(connection_mode_int)
+        # determine strProfile
+        if connection_mode in [
+                    'wlan_connection_mode_profile',  # name
+                    'wlan_connection_mode_temporary_profile'  # xml
+                ]:
+            cnxp.strProfile = LPCWSTR(connection_params["profile"])
+        else:
+            cnxp.strProfile = NULL
+        # ssid
+        if connection_params["ssid"] is not None:
+            dot11Ssid = DOT11_SSID()
+            dot11Ssid.SSID = connection_params["ssid"]
+            dot11Ssid.SSIDLength = len(connection_params["ssid"])
+            cnxp.pDot11Ssid = pointer(dot11Ssid)
+        else:
+            cnxp.pDot11Ssid = NULL
+        # bssidList
+        # NOTE: Before this can actually support multiple entries,
+        #   the DOT11_BSSID_LIST structure must be rewritten to
+        #   dynamically resize itself based on input.
+        if connection_params["bssidList"] is not None:
+            bssids = []
+            for bssidish in connection_params["bssidList"]:
+                bssidish = tuple(int(n, 16) for n in bssidish.split(b":"))
+                bssids.append((DOT11_MAC_ADDRESS)(*bssidish))
+            bssidListEntries = c_ulong(len(bssids))
+            bssids = (DOT11_MAC_ADDRESS * len(bssids))(*bssids)
+            bssidListHeader = NDIS_OBJECT_HEADER()
+            bssidListHeader.Type = NDIS_OBJECT_TYPE_DEFAULT
+            bssidListHeader.Revision = DOT11_BSSID_LIST_REVISION_1 # chr()
+            bssidListHeader.Size = c_ushort(sizeof(DOT11_BSSID_LIST))
+            bssidList = DOT11_BSSID_LIST()
+            bssidList.Header = bssidListHeader
+            bssidList.uNumOfEntries = bssidListEntries
+            bssidList.uTotalNumOfEntries = bssidListEntries
+            bssidList.BSSIDs = bssids
+            cnxp.pDesiredBssidList = pointer(bssidList)
+        else:
+            cnxp.pDesiredBssidList = NULL # required for XP
+        # look up bssType
+        # bssType must match type from profile if a profile is provided
+        bssType = DOT11_BSS_TYPE_DICT_VK[connection_params["bssType"]]
+        cnxp.dot11BssType = DOT11_BSS_TYPE(bssType)
+        # flags
+        cnxp.dwFlags = DWORD(connection_params["flags"])
         result = WlanConnect(handle, wireless_interface.guid, cnxp)
+        return result
     finally:
         WlanCloseHandle(handle)
-    return result
+
 
 def dot11bssidToString(dot11Bssid):
     return ":".join(map(lambda x: "%02X" % x, dot11Bssid))
@@ -560,55 +576,59 @@ def queryInterface(wireless_interface, opcode_item):
     """
     """
     handle = WlanOpenHandle()
-    opcode_item_ext = "".join(["wlan_intf_opcode_", opcode_item])
-    opcode = None
-    for key, val in WLAN_INTF_OPCODE_DICT.items():
-        if val == opcode_item_ext:
-            opcode = WLAN_INTF_OPCODE(key)
-            break
-    result = WlanQueryInterface(handle, wireless_interface.guid, opcode)
-    WlanCloseHandle(handle)
-    r = result.contents
-    if opcode_item == "interface_state":
-        #WLAN_INTERFACE_STATE
-        ext_out = WLAN_INTERFACE_STATE_DICT[r.value]
-    elif opcode_item == "current_connection":
-        #WLAN_CONNECTION_ATTRIBUTES
-        isState = WLAN_INTERFACE_STATE_DICT[r.isState]
-        wlanConnectionMode = WLAN_CONNECTION_MODE_KV[r.wlanConnectionMode]
-        strProfileName = r.strProfileName
-        aa = r.wlanAssociationAttributes
-        wlanAssociationAttributes = {
-            "dot11Ssid": aa.dot11Ssid.SSID.decode(),
-            "dot11BssType": DOT11_BSS_TYPE_DICT_KV[aa.dot11BssType],
-            "dot11Bssid": dot11bssidToString(aa.dot11Bssid),
-            "dot11PhyType": DOT11_PHY_TYPE_DICT[aa.dot11PhyType],
-            "uDot11PhyIndex": c_long(aa.uDot11PhyIndex).value,
-            "wlanSignalQuality": c_long(aa.wlanSignalQuality).value,
-            "ulRxRate": c_long(aa.ulRxRate).value,
-            "ulTxRate": c_long(aa.ulTxRate).value,
-        }
-        sa = r.wlanSecurityAttributes
-        wlanSecurityAttributes = {
-            "bSecurityEnabled": sa.bSecurityEnabled,
-            "bOneXEnabled": sa.bOneXEnabled,
-            "dot11AuthAlgorithm": DOT11_AUTH_ALGORITHM_DICT[sa.dot11AuthAlgorithm],
-            "dot11CipherAlgorithm": DOT11_CIPHER_ALGORITHM_DICT[sa.dot11CipherAlgorithm],
-        }
-        ext_out = {
-            "isState": isState,
-            "wlanConnectionMode": wlanConnectionMode,
-            "strProfileName": strProfileName,
-            "wlanAssociationAttributes": wlanAssociationAttributes,
-            "wlanSecurityAttributes": wlanSecurityAttributes,
-        }
-    elif opcode_item == "channel_number":
-        ext_out = {
-            "channel": r.value
-        }
-    else:
-        ext_out = None
-    return result.contents, ext_out
+    result = None
+    try:
+        opcode_item_ext = "".join(["wlan_intf_opcode_", opcode_item])
+        opcode = None
+        for key, val in WLAN_INTF_OPCODE_DICT.items():
+            if val == opcode_item_ext:
+                opcode = WLAN_INTF_OPCODE(key)
+                break
+        result = WlanQueryInterface(handle, wireless_interface.guid, opcode)
+        r = result.contents
+        if opcode_item == "interface_state":
+            #WLAN_INTERFACE_STATE
+            ext_out = WLAN_INTERFACE_STATE_DICT[r.value]
+        elif opcode_item == "current_connection":
+            #WLAN_CONNECTION_ATTRIBUTES
+            isState = WLAN_INTERFACE_STATE_DICT[r.isState]
+            wlanConnectionMode = WLAN_CONNECTION_MODE_KV[r.wlanConnectionMode]
+            strProfileName = r.strProfileName
+            aa = r.wlanAssociationAttributes
+            wlanAssociationAttributes = {
+                "dot11Ssid": aa.dot11Ssid.SSID.decode(),
+                "dot11BssType": DOT11_BSS_TYPE_DICT_KV[aa.dot11BssType],
+                "dot11Bssid": dot11bssidToString(aa.dot11Bssid),
+                "dot11PhyType": DOT11_PHY_TYPE_DICT[aa.dot11PhyType],
+                "uDot11PhyIndex": c_long(aa.uDot11PhyIndex).value,
+                "wlanSignalQuality": c_long(aa.wlanSignalQuality).value,
+                "ulRxRate": c_long(aa.ulRxRate).value,
+                "ulTxRate": c_long(aa.ulTxRate).value,
+            }
+            sa = r.wlanSecurityAttributes
+            wlanSecurityAttributes = {
+                "bSecurityEnabled": sa.bSecurityEnabled,
+                "bOneXEnabled": sa.bOneXEnabled,
+                "dot11AuthAlgorithm": DOT11_AUTH_ALGORITHM_DICT[sa.dot11AuthAlgorithm],
+                "dot11CipherAlgorithm": DOT11_CIPHER_ALGORITHM_DICT[sa.dot11CipherAlgorithm],
+            }
+            ext_out = {
+                "isState": isState,
+                "wlanConnectionMode": wlanConnectionMode,
+                "strProfileName": strProfileName,
+                "wlanAssociationAttributes": wlanAssociationAttributes,
+                "wlanSecurityAttributes": wlanSecurityAttributes,
+            }
+        elif opcode_item == "channel_number":
+            ext_out = {
+                "channel": r.value
+            }
+        else:
+            ext_out = None
+        return result.contents, ext_out
+    finally:
+        WlanFreeMemory(result)
+        WlanCloseHandle(handle)
 
 
 def wndToStr(wlan_notification_data):
