@@ -87,6 +87,8 @@ DOT11_PHY_TYPE_DICT = {0: "dot11_phy_type_unknown",
                        6: "dot11_phy_type_erp",
                        7: "dot11_phy_type_ht",
                        8: "dot11_phy_type_vht",
+                       9: "dot11_phy_type_dmg",
+                       10: "dot11_phy_type_he",
                        0x80000000: "dot11_phy_type_IHV_start",
                        0xffffffff: "dot11_phy_type_IHV_end"}
 
@@ -100,6 +102,8 @@ DOT11_AUTH_ALGORITHM_DICT = {1: "DOT11_AUTH_ALGO_80211_OPEN",
                              5: "DOT11_AUTH_ALGO_WPA_NONE",
                              6: "DOT11_AUTH_ALGO_RSNA",
                              7: "DOT11_AUTH_ALGO_RSNA_PSK",
+                             8: "DOT11_AUTH_ALGO_WPA3",
+                             9: "DOT11_AUTH_ALGO_WPA3_SAE",
                              0x80000000: "DOT11_AUTH_ALGO_IHV_START",
                              0xffffffff: "DOT11_AUTH_ALGO_IHV_END"}
 
@@ -111,6 +115,7 @@ DOT11_CIPHER_ALGORITHM_DICT = {0x00: "DOT11_CIPHER_ALGO_NONE",
                                0x02: "DOT11_CIPHER_ALGO_TKIP",
                                0x04: "DOT11_CIPHER_ALGO_CCMP",
                                0x05: "DOT11_CIPHER_ALGO_WEP104",
+                               0x06: "DOT11_CIPHER_ALGO_BIP",
                                0x100: "DOT11_CIPHER_ALGO_WPA_USE_GROUP",
                                0x100: "DOT11_CIPHER_ALGO_RSN_USE_GROUP",
                                0x101: "DOT11_CIPHER_ALGO_WEP",
@@ -607,6 +612,29 @@ WLAN_NOTIFICATION_DATA_ACM_TYPES_DICT = {
     WLAN_NOTIFICATION_ACM_ENUM.wlan_notification_acm_scan_list_refresh: None,
 }
 
+def WlanReasonCodeToString(dwReasonCode, dwBufferSize, pStringBuffer):
+    """
+        The WlanReasonCodeToString function retrieves a string that describes a specified reason code.
+
+        DWORD WlanReasonCodeToString(
+          DWORD  dwReasonCode,
+          DWORD  dwBufferSize,
+          PWCHAR pStringBuffer,
+          PVOID  pReserved
+        );
+    """
+    func_ref = wlanapi.WlanReasonCodeToString
+    func_ref.argtypes = [DWORD,
+                         DWORD,
+                         c_wchar_p,
+                         c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(dwReasonCode,
+                      dwBufferSize,
+                      pStringBuffer,
+                      None)
+    return result
+
 def WlanRegisterNotification(hClientHandle, callback, pCallbackContext=None):
     """
         The WlanRegisterNotification function is used to register and 
@@ -940,6 +968,44 @@ def WlanDeleteProfile(hClientHandle, pInterfaceGuid, profileName):
         raise Exception("WlanDeleteProfile failed. error %d" % result, result)
     return result    
 
+def WlanSetProfile(hClientHandle, pInterfaceGuid, xml):
+    """
+        The WlanSetProfile function sets the content of a specific profile.
+
+        DWORD WlanSetProfile(
+            _In_         HANDLE     hClientHandle,
+            _In_         const GUID *pInterfaceGuid,
+            _In_         DWORD      dwFlags,
+            _In_         LPCWSTR    strProfileXml,
+            _In_         LPCWSTR    strAllUserProfileSecurity,
+            _In_         BOOL       bOverwrite,
+            _Reserved_   PVOID      pReserved,
+            _Out_        DWORD      *pdwReasonCode
+        );
+    """
+    func_ref = wlanapi.WlanSetProfile
+    func_ref.argtypes = [HANDLE,
+                         POINTER(GUID),
+                         DWORD,
+                         LPCWSTR,
+                         LPCWSTR,
+                         BOOL,
+                         c_void_p,
+                         POINTER(DWORD)]
+    func_ref.restype = DWORD
+    flags = DWORD(0)
+    pdw_reason_code = DWORD()
+    result = func_ref(hClientHandle,
+                      byref(pInterfaceGuid),
+                      flags,
+                      xml,
+                      None,
+                      BOOL(True),
+                      None,
+                      byref(pdw_reason_code))
+    if result != ERROR_SUCCESS:
+        raise Exception("WlanSetProfile failed.", result)
+    return pdw_reason_code
 
 class NDIS_OBJECT_HEADER(Structure):
     """
