@@ -141,6 +141,7 @@ class WirelessNetworkBss(object):
         result += "BSS Type: %s\n" % self.bss_type
         result += "PHY Type: %s\n" % self.phy_type
         result += "Capabilities: %d\n" % self.capabilities
+        result += "Rssi: %d\n" % self.rssi
         # result += "Raw Information Elements:\n"
         # result += "%r" % self.raw_information_elements
         result += "\nInformation Elements:\n"
