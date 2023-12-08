@@ -74,7 +74,7 @@ try:
             DOT11_BSS_TYPE_DICT_KV.items() }
 except AttributeError:
     DOT11_BSS_TYPE_DICT_VK = { v: k for k, v in
-            DOT11_BSS_TYPE_DICT_KV.items() }    
+            DOT11_BSS_TYPE_DICT_KV.items() }
 
 # The DOT11_PHY_TYPE enumeration defines an 802.11 PHY and media type.
 DOT11_PHY_TYPE = c_uint
@@ -87,6 +87,9 @@ DOT11_PHY_TYPE_DICT = {0: "dot11_phy_type_unknown",
                        6: "dot11_phy_type_erp",
                        7: "dot11_phy_type_ht",
                        8: "dot11_phy_type_vht",
+                       9: "dot11_phy_type_dmg",
+                       10: "dot11_phy_type_he",
+                       11: "dot11_phy_type_eht",
                        0x80000000: "dot11_phy_type_IHV_start",
                        0xffffffff: "dot11_phy_type_IHV_end"}
 
@@ -100,6 +103,11 @@ DOT11_AUTH_ALGORITHM_DICT = {1: "DOT11_AUTH_ALGO_80211_OPEN",
                              5: "DOT11_AUTH_ALGO_WPA_NONE",
                              6: "DOT11_AUTH_ALGO_RSNA",
                              7: "DOT11_AUTH_ALGO_RSNA_PSK",
+                             8: "DOT11_AUTH_ALGO_WPA3",
+                             8: "DOT11_AUTH_ALGO_WPA3_ENT_192",
+                             9: "DOT11_AUTH_ALGO_WPA3_SAE",
+                             10: "DOT11_AUTH_ALGO_OWE",
+                             11: "DOT11_AUTH_ALGO_WPA3_ENT",
                              0x80000000: "DOT11_AUTH_ALGO_IHV_START",
                              0xffffffff: "DOT11_AUTH_ALGO_IHV_END"}
 
@@ -111,6 +119,13 @@ DOT11_CIPHER_ALGORITHM_DICT = {0x00: "DOT11_CIPHER_ALGO_NONE",
                                0x02: "DOT11_CIPHER_ALGO_TKIP",
                                0x04: "DOT11_CIPHER_ALGO_CCMP",
                                0x05: "DOT11_CIPHER_ALGO_WEP104",
+                               0x06: "DOT11_CIPHER_ALGO_BIP",
+                               0x08: "DOT11_CIPHER_ALGO_GCMP",
+                               0x09: "DOT11_CIPHER_ALGO_GCMP_256",
+                               0x0a: "DOT11_CIPHER_ALGO_CCMP_256",
+                               0x0b: "DOT11_CIPHER_ALGO_BIP_GMAC_128",
+                               0x0c: "DOT11_CIPHER_ALGO_BIP_GMAC_256",
+                               0x0d: "DOT11_CIPHER_ALGO_BIP_CMAC_256",
                                0x100: "DOT11_CIPHER_ALGO_WPA_USE_GROUP",
                                0x100: "DOT11_CIPHER_ALGO_RSN_USE_GROUP",
                                0x101: "DOT11_CIPHER_ALGO_WEP",
@@ -206,7 +221,7 @@ class WLAN_NOTIFICATION_ACM_ENUM(Enum):
 
 class WLAN_NOTIFICATION_MSM_ENUM(Enum):
     wlan_notification_msm_start                         = 0
-    wlan_notification_msm_associating                   = 1 
+    wlan_notification_msm_associating                   = 1
     wlan_notification_msm_associated                    = 2
     wlan_notification_msm_authenticating                = 3
     wlan_notification_msm_connected                     = 4
@@ -481,7 +496,7 @@ class WLAN_PROFILE_INFO_LIST(Structure):
 
 class WLAN_NOTIFICATION_DATA(Structure):
     """
-        The WLAN_NOTIFICATION_DATA structure contains information provided 
+        The WLAN_NOTIFICATION_DATA structure contains information provided
         when receiving notifications.
 
         typedef struct _WLAN_NOTIFICATION_DATA {
@@ -491,7 +506,7 @@ class WLAN_NOTIFICATION_DATA(Structure):
           DWORD dwDataSize;
           PVOID pData;
         } WLAN_NOTIFICATION_DATA, *PWLAN_NOTIFICATION_DATA;
-    """ 
+    """
     _fields_ = [("NotificationSource", DWORD),
                 ("NotificationCode", DWORD),
                 ("InterfaceGuid", GUID),
@@ -501,7 +516,7 @@ class WLAN_NOTIFICATION_DATA(Structure):
 
 class WLAN_NOTIFICATION_CALLBACK():
     """
-        The WLAN_NOTIFICATION_CALLBACK allback function prototype defines 
+        The WLAN_NOTIFICATION_CALLBACK allback function prototype defines
         the type of notification callback function.
 
         typedef VOID ( WINAPI *WLAN_NOTIFICATION_CALLBACK)(
@@ -609,7 +624,7 @@ WLAN_NOTIFICATION_DATA_ACM_TYPES_DICT = {
 
 def WlanRegisterNotification(hClientHandle, callback, pCallbackContext=None):
     """
-        The WlanRegisterNotification function is used to register and 
+        The WlanRegisterNotification function is used to register and
         unregister notifications on all wireless interfaces.
 
         DWORD WINAPI WlanRegisterNotification(
@@ -629,7 +644,7 @@ def WlanRegisterNotification(hClientHandle, callback, pCallbackContext=None):
 
     func_ref = wlanapi.WlanRegisterNotification
     func_ref.argtypes = [
-        HANDLE, 
+        HANDLE,
         DWORD,
         BOOL,
         WLAN_NOTIFICATION_CALLBACK_M,
@@ -644,11 +659,11 @@ def WlanRegisterNotification(hClientHandle, callback, pCallbackContext=None):
     pdwPrevNotifSource = None
 
     result = func_ref(hClientHandle,
-                      dwNotifSource, 
-                      bIgnoreDuplicate, 
-                      funcCallback, 
-                      pCallbackContext, 
-                      None, 
+                      dwNotifSource,
+                      bIgnoreDuplicate,
+                      funcCallback,
+                      pCallbackContext,
+                      None,
                       pdwPrevNotifSource)
 
     if result != ERROR_SUCCESS:
@@ -938,7 +953,7 @@ def WlanDeleteProfile(hClientHandle, pInterfaceGuid, profileName):
                       None)
     if result != ERROR_SUCCESS:
         raise Exception("WlanDeleteProfile failed. error %d" % result, result)
-    return result    
+    return result
 
 
 class NDIS_OBJECT_HEADER(Structure):
