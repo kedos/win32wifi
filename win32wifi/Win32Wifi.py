@@ -411,7 +411,11 @@ def queryInterface(wireless_interface, opcode_item):
         if val == opcode_item_ext:
             opcode = WLAN_INTF_OPCODE(key)
             break
-    result = WlanQueryInterface(handle, wireless_interface.guid, opcode)
+    try:
+        result = WlanQueryInterface(handle, wireless_interface.guid, opcode)
+    except Exception as e:
+        WlanCloseHandle(handle)
+        raise e
     WlanCloseHandle(handle)
     r = result.contents
     if opcode_item == "interface_state":
