@@ -33,6 +33,7 @@ import pytest
 
 from win32wifi.Win32NativeWifiApi import (
     ERROR_SUCCESS,
+    Win32WifiError,
     WlanCloseHandle,
     WlanEnumInterfaces,
     WlanFreeMemory,
@@ -45,6 +46,19 @@ from win32wifi.Win32NativeWifiApi import (
 
 @pytest.mark.hardware
 class TestWin32NativeWifiApi(unittest.TestCase):
+
+    def setUp(self):
+        # CI runners (and headless VMs in general) often have no wireless
+        # adapter and the WLAN AutoConfig service stopped, so WlanOpenHandle
+        # raises with ERROR_SERVICE_NOT_ACTIVE (1062). On non-Windows hosts
+        # ``wlanapi.dll`` is missing and ``_check_wlanapi`` raises
+        # RuntimeError. Either way: skip rather than fail — these tests
+        # cannot meaningfully run without a real wifi stack.
+        try:
+            handle = WlanOpenHandle()
+        except (Win32WifiError, RuntimeError) as exc:
+            self.skipTest(f"No usable WLAN stack on this host: {exc}")
+        WlanCloseHandle(handle)
 
     def test_wlan_open_close_handle_success(self):
         handle = WlanOpenHandle()
