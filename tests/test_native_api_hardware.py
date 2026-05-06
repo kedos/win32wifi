@@ -124,6 +124,17 @@ class TestWin32NativeWifiApi(unittest.TestCase):
     def test_wlan_register_notification(self):
         handle = WlanOpenHandle()
         try:
+            # On runners where Wlansvc is "running but no adapters" (hosted
+            # CI), WlanCloseHandle blocks indefinitely while draining a
+            # registered callback. Skip when there's nothing meaningful to
+            # observe anyway.
+            wlan_ifaces = WlanEnumInterfaces(handle)
+            try:
+                if wlan_ifaces.contents.NumberOfItems == 0:
+                    self.skipTest("No wireless adapters present; notification subscription would hang on close.")
+            finally:
+                WlanFreeMemory(wlan_ifaces)
+
             ev = threading.Event()
 
             def callback(wnd, p):
