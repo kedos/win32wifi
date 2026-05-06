@@ -47,8 +47,8 @@ for iface in interfaces:
 
 ## Authors
 
-- Andres Blanco (6e726d)
-- Shaked Gitelman (almondg)
+- Andres Blanco (6e726d) — original PyWiWi author
+- [kedos](https://github.com/kedos) — current maintainer
 
 ## License
 

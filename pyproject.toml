@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "GPL-3.0-or-later"}
 authors = [
-    {name = "Shaked Gitelman", email = "shaked.dev@gmail.com"},
+    {name = "kedos"},
     {name = "Andres Blanco", email = "6e726d@gmail.com"}
 ]
 keywords = ["windows", "win32", "wifi", "wlan", "wlanapi", "wlanapi.dll"]
@@ -38,7 +38,7 @@ test = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/almondg/win32wifi"
+Homepage = "https://github.com/kedos/win32wifi"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
