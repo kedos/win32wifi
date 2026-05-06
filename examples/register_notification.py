@@ -1,31 +1,56 @@
+# win32wifi - Windows Native Wifi Api Python library.
+# Copyright (C) 2016 - 2024 Shaked Gitelman
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
+#
+
 import asyncio
+from datetime import datetime
 
-from win32wifi.Win32Wifi import *
+from win32wifi.Win32Wifi import getWirelessInterfaces, registerNotification
 
 
-def demo(wlan_event):
-    if wlan_event != None:
-        print("%s: %s" % (datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S.%f"), wlan_event))
+def demo(wlan_event, context):
+    if wlan_event is not None:
+        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')}: {wlan_event}")
+        if wlan_event.data:
+            print(f"  Data: {wlan_event.data}")
 
-@asyncio.coroutine
-def main():
+
+async def main():
     ifaces = getWirelessInterfaces()
+    print(f"Found {len(ifaces)} interface(s).")
     for iface in ifaces:
-        print(iface.guid)
+        print(f"  - {iface.guid} ({iface.description})")
 
-    print("Registering...")
-    registerNotification(demo)
-    print("Done.")
+    print("Registering for notifications...")
+    # Keep a reference to the notification object to prevent it from being garbage collected
+    notification_obj = registerNotification(demo)
+    print("Successfully registered. Press Ctrl+C to stop.")
 
-    yield from asyncio.Event().wait()
+    try:
+        # Keep the script running
+        while True:
+            await asyncio.sleep(1)
+    except asyncio.CancelledError:
+        pass
 
 
 if __name__ == "__main__":
-    loop = asyncio.ProactorEventLoop()
-    asyncio.set_event_loop(loop)
-
     try:
-        loop.run_until_complete(main())
+        asyncio.run(main())
     except KeyboardInterrupt:
-        pass
-    loop.close()
+        print("\nStopping...")
