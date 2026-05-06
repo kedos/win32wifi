@@ -348,6 +348,51 @@ def getInterfaceCapability(wireless_interface: WirelessInterface) -> WirelessInt
         finally:
             WlanFreeMemory(cap_ptr)
 
+def renameProfile(wireless_interface: WirelessInterface, old_name: str, new_name: str) -> int:
+    with WlanHandle() as handle:
+        result = WlanRenameProfile(handle, wireless_interface.guid, old_name, new_name)
+    return result
+
+def setProfileList(wireless_interface: WirelessInterface, profile_names: List[str]) -> int:
+    num_items = len(profile_names)
+    names_array = (LPCWSTR * num_items)(*profile_names)
+    with WlanHandle() as handle:
+        result = WlanSetProfileList(handle, wireless_interface.guid, num_items, names_array)
+    return result
+
+def setProfilePosition(wireless_interface: WirelessInterface, profile_name: str, position: int) -> int:
+    with WlanHandle() as handle:
+        result = WlanSetProfilePosition(handle, wireless_interface.guid, profile_name, position)
+    return result
+
+def setInterface(wireless_interface: WirelessInterface, opcode_item: str, data: Any) -> int:
+    opcode_item_ext = f"wlan_intf_opcode_{opcode_item}"
+    opcode_val = None
+    for key, val in WLAN_INTF_OPCODE_DICT.items():
+        if val == opcode_item_ext:
+            opcode_val = key
+            break
+    
+    if opcode_val is None:
+        raise ValueError(f"Unknown opcode item: {opcode_item}")
+
+    # For now, we only support basic types for setInterface (bool, dword)
+    # If more complex structures are needed, they should be added here.
+    if isinstance(data, bool):
+        p_data = pointer(c_bool(data))
+        data_size = sizeof(c_bool)
+    elif isinstance(data, int):
+        p_data = pointer(DWORD(data))
+        data_size = sizeof(DWORD)
+    else:
+        # Fallback for already packed ctypes structures
+        p_data = cast(pointer(data), c_void_p) if hasattr(data, '_fields_') else data
+        data_size = sizeof(data) if hasattr(data, '_fields_') else 0
+
+    with WlanHandle() as handle:
+        result = WlanSetInterface(handle, wireless_interface.guid, WLAN_INTF_OPCODE(opcode_val), data_size, p_data)
+    return result
+
 def connect(wireless_interface: WirelessInterface, connection_params: Dict[str, Any]) -> int:
     """
         The WlanConnect function attempts to connect to a specific network.

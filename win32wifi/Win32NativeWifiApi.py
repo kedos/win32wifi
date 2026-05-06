@@ -1306,3 +1306,84 @@ def WlanGetInterfaceCapability(hClientHandle: HANDLE, pInterfaceGuid: GUID) -> P
         raise Win32WifiError("WlanGetInterfaceCapability failed", result)
     return ppCapability
 
+
+def WlanRenameProfile(hClientHandle: HANDLE, pInterfaceGuid: GUID, strOldProfileName: str, strNewProfileName: str) -> int:
+    """
+        DWORD WINAPI WlanRenameProfile(
+          _In_       HANDLE     hClientHandle,
+          _In_       const GUID *pInterfaceGuid,
+          _In_       LPCWSTR    strOldProfileName,
+          _In_       LPCWSTR    strNewProfileName,
+          _Reserved_ PVOID      pReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanRenameProfile
+    func_ref.argtypes = [HANDLE, POINTER(GUID), LPCWSTR, LPCWSTR, c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle, byref(pInterfaceGuid), strOldProfileName, strNewProfileName, None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanRenameProfile failed from {strOldProfileName} to {strNewProfileName}", result)
+    return result
+
+
+def WlanSetProfileList(hClientHandle: HANDLE, pInterfaceGuid: GUID, dwNumberOfItems: int, ppstrProfileNames: POINTER(LPCWSTR)) -> int:
+    """
+        DWORD WINAPI WlanSetProfileList(
+          _In_       HANDLE     hClientHandle,
+          _In_       const GUID *pInterfaceGuid,
+          _In_       DWORD      dwItems,
+          _In_       LPCWSTR    *ppstrProfileNames,
+          _Reserved_ PVOID      pReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanSetProfileList
+    func_ref.argtypes = [HANDLE, POINTER(GUID), DWORD, POINTER(LPCWSTR), c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle, byref(pInterfaceGuid), dwNumberOfItems, ppstrProfileNames, None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanSetProfileList failed", result)
+    return result
+
+
+def WlanSetProfilePosition(hClientHandle: HANDLE, pInterfaceGuid: GUID, strProfileName: str, dwPosition: int) -> int:
+    """
+        DWORD WINAPI WlanSetProfilePosition(
+          _In_       HANDLE     hClientHandle,
+          _In_       const GUID *pInterfaceGuid,
+          _In_       LPCWSTR    strProfileName,
+          _In_       DWORD      dwPosition,
+          _Reserved_ PVOID      pReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanSetProfilePosition
+    func_ref.argtypes = [HANDLE, POINTER(GUID), LPCWSTR, DWORD, c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle, byref(pInterfaceGuid), strProfileName, dwPosition, None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanSetProfilePosition failed for {strProfileName}", result)
+    return result
+
+
+def WlanSetInterface(hClientHandle: HANDLE, pInterfaceGuid: GUID, OpCode: WLAN_INTF_OPCODE, dwDataSize: int, pData: c_void_p) -> int:
+    """
+        DWORD WINAPI WlanSetInterface(
+          _In_       HANDLE           hClientHandle,
+          _In_       const GUID       *pInterfaceGuid,
+          _In_       WLAN_INTF_OPCODE OpCode,
+          _In_       DWORD            dwDataSize,
+          _In_       PVOID            pData,
+          _Reserved_ PVOID            pReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanSetInterface
+    func_ref.argtypes = [HANDLE, POINTER(GUID), WLAN_INTF_OPCODE, DWORD, c_void_p, c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle, byref(pInterfaceGuid), OpCode, dwDataSize, pData, None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanSetInterface failed", result)
+    return result
+
