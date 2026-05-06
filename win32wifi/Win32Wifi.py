@@ -127,7 +127,7 @@ class WirelessNetworkBss:
     def __process_information_elements(self, bss_entry: WLAN_BSS_ENTRY):
         bss_entry_pointer = addressof(bss_entry)
         ie_offset = bss_entry.IeOffset
-        data_type = (c_ubyte * bss_entry.IeSize)
+        data_type = c_ubyte * bss_entry.IeSize
         ie_buffer = data_type.from_address(bss_entry_pointer + ie_offset)
         self.raw_information_elements = list(ie_buffer)
 
@@ -474,8 +474,7 @@ def queryAutoConfigParameter(opcode: str) -> Any:
             # Most autoconf parameters are BOOL or DWORD
             if data_size == 4:
                 return cast(data_ptr, POINTER(DWORD)).contents.value
-            else:
-                return data_ptr
+            return data_ptr
         finally:
             WlanFreeMemory(data_ptr)
 
@@ -667,16 +666,17 @@ def hostedNetworkQueryProperty(opcode: str) -> Any:
         raise ValueError(f"Unknown hosted network opcode: {opcode}")
 
     with WlanHandle() as handle:
-        size, p_data, val_type = WlanHostedNetworkQueryProperty(handle, WLAN_HOSTED_NETWORK_OPCODE(opcode_val))
+        _size, p_data, _val_type = WlanHostedNetworkQueryProperty(
+            handle, WLAN_HOSTED_NETWORK_OPCODE(opcode_val)
+        )
         try:
             if opcode == "wlan_hosted_network_opcode_connection_settings":
                 return cast(p_data, POINTER(WLAN_HOSTED_NETWORK_CONNECTION_SETTINGS)).contents
-            elif opcode == "wlan_hosted_network_opcode_security_settings":
+            if opcode == "wlan_hosted_network_opcode_security_settings":
                 return cast(p_data, POINTER(WLAN_HOSTED_NETWORK_SECURITY_SETTINGS)).contents
-            elif opcode == "wlan_hosted_network_opcode_enable":
+            if opcode == "wlan_hosted_network_opcode_enable":
                 return cast(p_data, POINTER(BOOL)).contents.value
-            else:
-                return p_data
+            return p_data
         finally:
             WlanFreeMemory(p_data)
 
@@ -1111,7 +1111,7 @@ class WlanEvent:
 
     @staticmethod
     def parse_data(data_pointer: int, data_size: int, source: int, code: Enum) -> Any:
-        if data_size == 0 or (source != WLAN_NOTIFICATION_SOURCE_MSM and source != WLAN_NOTIFICATION_SOURCE_ACM):
+        if data_size == 0 or source not in (WLAN_NOTIFICATION_SOURCE_MSM, WLAN_NOTIFICATION_SOURCE_ACM):
             return None
 
         typ = None

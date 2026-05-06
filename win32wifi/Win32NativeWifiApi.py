@@ -22,6 +22,7 @@
 
 import ctypes
 from ctypes import *
+from ctypes.wintypes import BOOL, DWORD, HANDLE, LPCWSTR, LPWSTR
 from enum import Enum
 from typing import Any, Optional, Tuple
 
@@ -47,8 +48,6 @@ except ImportError:
             if src is not None:
                 ctypes.memmove(ctypes.byref(self), ctypes.byref(src),
                                ctypes.sizeof(self))
-
-from ctypes.wintypes import BOOL, DWORD, HANDLE, LPCWSTR, LPWSTR
 
 ERROR_SUCCESS = 0
 
@@ -270,12 +269,15 @@ WLAN_CONNECTION_MODE_KV = {0: "wlan_connection_mode_profile",
                            5: "wlan_connection_mode_invalid"}
 WLAN_CONNECTION_MODE_VK = { v: k for k, v in WLAN_CONNECTION_MODE_KV.items() }
 
-def get_errno() -> int:
+# Intentionally shadow the names brought in by ``from ctypes import *``:
+# we wrap the underlying ctypes helpers with thin, MSDN-named accessors
+# (and a non-Windows fallback for ``get_last_error``).
+def get_errno() -> int:  # pylint: disable=function-redefined
     """Return the current C errno value from ctypes' per-thread storage."""
     return ctypes.get_errno()
 
 
-def get_last_error() -> int:
+def get_last_error() -> int:  # pylint: disable=function-redefined
     """Return the current Windows last-error value from ctypes' per-thread storage.
 
     The notification callback registered by :func:`WlanRegisterNotification`
@@ -325,8 +327,7 @@ class WLAN_INTERFACE_INFO_LIST(Structure):
 
 
 class WLAN_PHY_RADIO_STATE(Structure):
-    """
-    """
+    """The WLAN_PHY_RADIO_STATE structure specifies the radio state on a specific physical layer."""
     _fields_ = [("dwPhyIndex", DWORD),
                 ("dot11SoftwareRadioState", DOT11_RADIO_STATE),
                 ("dot11HardwareRadioState", DOT11_RADIO_STATE)]
@@ -1045,8 +1046,7 @@ class WLAN_CONNECTION_PARAMETERS(Structure):
           DOT11_BSS_TYPE       dot11BssType;
           DWORD                dwFlags;
         } WLAN_CONNECTION_PARAMETERS, *PWLAN_CONNECTION_PARAMETERS;
-    """
-    """
+
         Re strProfile:
         If wlanConnectionMode is set to wlan_connection_mode_profile, then
         strProfile specifies the name of the profile used for the connection.
@@ -1094,6 +1094,11 @@ def WlanConnect(hClientHandle: HANDLE, pInterfaceGuid: GUID, pConnectionParamete
 
 def WlanDisconnect(hClientHandle: HANDLE, pInterfaceGuid: GUID) -> int:
     """
+        DWORD WINAPI WlanDisconnect(
+          _In_       HANDLE  hClientHandle,
+          _In_       const GUID *pInterfaceGuid,
+          _Reserved_ PVOID   pReserved
+        );
     """
     _check_wlanapi()
     func_ref = wlanapi.WlanDisconnect
@@ -1147,8 +1152,7 @@ WLAN_OPCODE_VALUE_TYPE_DICT = {
 }
 
 class WLAN_ASSOCIATION_ATTRIBUTES(Structure):
-    """
-    """
+    """The WLAN_ASSOCIATION_ATTRIBUTES structure contains association attributes for a connection."""
     _fields_ = [("dot11Ssid", DOT11_SSID),
                 ("dot11BssType", DOT11_BSS_TYPE),
                 ("dot11Bssid", DOT11_MAC_ADDRESS),
@@ -1159,8 +1163,7 @@ class WLAN_ASSOCIATION_ATTRIBUTES(Structure):
                 ("ulTxRate", c_ulong)]
 
 class WLAN_SECURITY_ATTRIBUTES(Structure):
-    """
-    """
+    """The WLAN_SECURITY_ATTRIBUTES structure defines the security attributes for a wireless connection."""
     _fields_ = [("bSecurityEnabled", BOOL),
                 ("bOneXEnabled", BOOL),
                 ("dot11AuthAlgorithm", DOT11_AUTH_ALGORITHM_TYPE),
@@ -2382,4 +2385,3 @@ def WlanSetInterface(hClientHandle: HANDLE, pInterfaceGuid: GUID, OpCode: WLAN_I
     if result != ERROR_SUCCESS:
         raise Win32WifiError("WlanSetInterface failed", result)
     return result
-

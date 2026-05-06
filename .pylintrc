@@ -3,16 +3,41 @@ ignore=venv,tests,examples
 load-plugins=
 
 [MESSAGES CONTROL]
-# Disable specific messages that might be too noisy for this legacy wrapper
+# Disabled messages — categorised by why they don't apply to this wrapper.
 disable=
+    # --- Docstring/naming: this package mirrors the Microsoft Native Wifi
+    # API, where MSDN signatures are reproduced verbatim and naming follows
+    # Win32 conventions (CamelCase, ALL_CAPS structs, Hungarian prefixes).
     C0114, # missing-module-docstring
     C0115, # missing-class-docstring
     C0116, # missing-function-docstring
     C0103, # invalid-name (Native API names often violate PEP8)
+    C0301, # line-too-long (covered by ruff with line-length=140)
+    C0302, # too-many-lines (Win32NativeWifiApi.py is a comprehensive binding)
+
+    # --- Wildcard imports are intentional: ctypes brings in ~150 names that
+    # the binding re-exports, and Win32Wifi pulls in the entire low-level
+    # surface so that consumers can ``from Win32Wifi import *`` for parity
+    # with the upstream PyWiWi API.
+    W0401, # wildcard-import
+    W0614, # unused-wildcard-import
+
+    # --- ctypes Structure idiom: variable-length array fields (e.g.
+    # ``DOT11_BSSID_LIST.uNumOfEntries``) are populated after instantiation
+    # because their ``_fields_`` shape is fixed at class-creation time.
+    W0201, # attribute-defined-outside-init
+
+    # --- Architectural: the Win32 API has many wide structures and
+    # multi-argument functions; redesigning them is out of scope.
+    R0902, # too-many-instance-attributes
     R0903, # too-few-public-methods
-    W0703, # broad-except (Sometimes needed in high-level wrappers)
-    W0212, # protected-access (Needed for some ctypes magic)
-    C0301, # line-too-long
+    R0914, # too-many-locals
+    R0917, # too-many-positional-arguments
+
+    # --- Other intentional choices:
+    W0511, # fixme (TODOs are tracked, shouldn't fail CI)
+    W0703, # broad-except (sometimes needed in high-level wrappers)
+    W0212, # protected-access (needed for some ctypes magic)
 
 [REPORTS]
 output-format=colorized
