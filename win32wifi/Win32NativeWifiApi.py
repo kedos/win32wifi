@@ -1210,7 +1210,7 @@ WLAN_INTF_OPCODE_TYPE_DICT = {
     "wlan_intf_opcode_certified_safe_mode": c_bool
 }
 
-def WlanQueryInterface(hClientHandle: HANDLE, pInterfaceGuid: GUID, OpCode: WLAN_INTF_OPCODE) -> POINTER(Any):
+def WlanQueryInterface(hClientHandle: HANDLE, pInterfaceGuid: GUID, OpCode: WLAN_INTF_OPCODE) -> Any:
     """
         DWORD WINAPI WlanQueryInterface(
           _In_        HANDLE hClientHandle,
@@ -1463,7 +1463,7 @@ WLAN_AUTOCONF_OPCODE_DICT = {
 }
 
 
-def WlanQueryAutoConfigParameter(hClientHandle: HANDLE, OpCode: WLAN_AUTOCONF_OPCODE) -> Tuple[POINTER(Any), int]:
+def WlanQueryAutoConfigParameter(hClientHandle: HANDLE, OpCode: WLAN_AUTOCONF_OPCODE) -> Tuple[Any, int]:
     """
         DWORD WINAPI WlanQueryAutoConfigParameter(
           _In_       HANDLE           hClientHandle,
