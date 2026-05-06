@@ -30,6 +30,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import xmltodict
 
 from win32wifi.Win32NativeWifiApi import *
+
 # Reuse whichever GUID the low-level module ended up with (real comtypes on
 # Windows, ctypes fallback elsewhere) so both layers agree on the type.
 from win32wifi.Win32NativeWifiApi import GUID
@@ -259,7 +260,7 @@ class HostedNetworkStatus:
         self.channel_frequency: int = status.ulChannelFrequency
         self.number_of_peers: int = status.dwNumberOfPeers
         self.peers: List[HostedNetworkPeer] = []
-        
+
         # Handle dynamic PeerList
         if self.number_of_peers > 0:
             data_type = WLAN_HOSTED_NETWORK_PEER_STATE
@@ -412,7 +413,7 @@ def getFilterList(list_type: str) -> List[FilteredNetwork]:
             break
     if type_val is None:
         raise ValueError(f"Unknown filter list type: {list_type}")
-    
+
     networks = []
     with WlanHandle() as handle:
         filter_list_ptr = WlanGetFilterList(handle, type_val)
@@ -437,14 +438,14 @@ def setFilterList(list_type: str, networks: List[Tuple[str, str]]) -> int:
             break
     if type_val is None:
         raise ValueError(f"Unknown filter list type: {list_type}")
-    
+
     num_items = len(networks)
-    
+
     class DYNAMIC_WLAN_FILTER_LIST(Structure):
         _fields_ = [("dwNumberOfItems", DWORD),
                     ("dwIndex", DWORD),
                     ("Network", DOT11_NETWORK * num_items)]
-    
+
     fl = DYNAMIC_WLAN_FILTER_LIST()
     fl.dwNumberOfItems = num_items
     fl.dwIndex = 0
@@ -453,7 +454,7 @@ def setFilterList(list_type: str, networks: List[Tuple[str, str]]) -> int:
         fl.Network[i].dot11Ssid.SSIDLength = len(ssid_bytes)
         fl.Network[i].dot11Ssid.SSID = ssid_bytes
         fl.Network[i].dot11BssType = DOT11_BSS_TYPE_DICT_VK[bss_type_str]
-        
+
     with WlanHandle() as handle:
         result = WlanSetFilterList(handle, type_val, cast(pointer(fl), POINTER(WLAN_FILTER_LIST)))
     return result
@@ -466,7 +467,7 @@ def queryAutoConfigParameter(opcode: str) -> Any:
             break
     if opcode_val is None:
         raise ValueError(f"Unknown autoconf opcode: {opcode}")
-        
+
     with WlanHandle() as handle:
         data_ptr, data_size = WlanQueryAutoConfigParameter(handle, WLAN_AUTOCONF_OPCODE(opcode_val))
         try:
@@ -486,7 +487,7 @@ def setAutoConfigParameter(opcode: str, data: Any) -> int:
             break
     if opcode_val is None:
         raise ValueError(f"Unknown autoconf opcode: {opcode}")
-        
+
     if isinstance(data, bool):
         p_data = pointer(c_bool(data))
         data_size = sizeof(c_bool)
@@ -496,17 +497,35 @@ def setAutoConfigParameter(opcode: str, data: Any) -> int:
     else:
         p_data = data
         data_size = sizeof(data)
-        
+
     with WlanHandle() as handle:
         result = WlanSetAutoConfigParameter(handle, WLAN_AUTOCONF_OPCODE(opcode_val), data_size, p_data)
     return result
 
-def saveTemporaryProfile(wireless_interface: WirelessInterface, profile_name: str, all_user_security: Optional[str] = None, flags: int = 0, overwrite: bool = True) -> int:
+def saveTemporaryProfile(
+    wireless_interface: WirelessInterface,
+    profile_name: str,
+    all_user_security: Optional[str] = None,
+    flags: int = 0,
+    overwrite: bool = True,
+) -> int:
     with WlanHandle() as handle:
-        result = WlanSaveTemporaryProfile(handle, wireless_interface.guid, profile_name, all_user_security, flags, overwrite)
+        result = WlanSaveTemporaryProfile(
+            handle,
+            wireless_interface.guid,
+            profile_name,
+            all_user_security,
+            flags,
+            overwrite,
+        )
     return result
 
-def uiEditProfile(profile_name: str, wireless_interface: WirelessInterface, hwnd: int = 0, completion_source: str = "wlan_ui_completion_source_user") -> int:
+def uiEditProfile(
+    profile_name: str,
+    wireless_interface: WirelessInterface,
+    hwnd: int = 0,
+    completion_source: str = "wlan_ui_completion_source_user",
+) -> int:
     cs_val = None
     for k, v in WLAN_UI_COMPLETION_SOURCE_DICT.items():
         if v == completion_source:
@@ -514,7 +533,7 @@ def uiEditProfile(profile_name: str, wireless_interface: WirelessInterface, hwnd
             break
     if cs_val is None:
         raise ValueError(f"Unknown completion source: {completion_source}")
-        
+
     # Client version 2 is for Vista or later
     result = WlanUIEditProfile(2, profile_name, wireless_interface.guid, hwnd, cs_val)
     return result
@@ -524,16 +543,23 @@ def renameProfile(wireless_interface: WirelessInterface, old_name: str, new_name
         result = WlanRenameProfile(handle, wireless_interface.guid, old_name, new_name)
     return result
 
-def setProfileEapUserData(wireless_interface: WirelessInterface, profile_name: str, eap_type_code: int, author_id: int, user_data: bytes, flags: int = 0) -> int:
+def setProfileEapUserData(
+    wireless_interface: WirelessInterface,
+    profile_name: str,
+    eap_type_code: int,
+    author_id: int,
+    user_data: bytes,
+    flags: int = 0,
+) -> int:
     eap_method = EAP_METHOD_TYPE()
     eap_method.eapType.type = eap_type_code
     eap_method.eapType.dwVendorId = 0
     eap_method.eapType.dwVendorType = 0
     eap_method.dwAuthorId = author_id
-    
+
     data_size = len(user_data)
     p_data = cast(create_string_buffer(user_data, data_size), c_void_p)
-    
+
     with WlanHandle() as handle:
         result = WlanSetProfileEapUserData(handle, wireless_interface.guid, profile_name, eap_method, flags, data_size, p_data)
     return result
@@ -551,7 +577,7 @@ def getSecuritySettings(securable_object: str) -> Dict[str, Any]:
             break
     if obj_val is None:
         raise ValueError(f"Unknown securable object: {securable_object}")
-        
+
     with WlanHandle() as handle:
         val_type, sddl, access = WlanGetSecuritySettings(handle, WLAN_SECURABLE_OBJECT(obj_val))
         return {
@@ -568,7 +594,7 @@ def setSecuritySettings(securable_object: str, sddl: str) -> int:
             break
     if obj_val is None:
         raise ValueError(f"Unknown securable object: {securable_object}")
-        
+
     with WlanHandle() as handle:
         result = WlanSetSecuritySettings(handle, WLAN_SECURABLE_OBJECT(obj_val), sddl)
     return result
@@ -639,7 +665,7 @@ def hostedNetworkQueryProperty(opcode: str) -> Any:
             break
     if opcode_val is None:
         raise ValueError(f"Unknown hosted network opcode: {opcode}")
-        
+
     with WlanHandle() as handle:
         size, p_data, val_type = WlanHostedNetworkQueryProperty(handle, WLAN_HOSTED_NETWORK_OPCODE(opcode_val))
         try:
@@ -691,7 +717,7 @@ def hostedNetworkSetProperty(opcode: str, data: Any) -> int:
             break
     if opcode_val is None:
         raise ValueError(f"Unknown hosted network opcode: {opcode}")
-        
+
     if isinstance(data, bool):
         p_data = pointer(BOOL(data))
         data_size = sizeof(BOOL)
@@ -701,7 +727,7 @@ def hostedNetworkSetProperty(opcode: str, data: Any) -> int:
     else:
         p_data = data
         data_size = 0
-        
+
     with WlanHandle() as handle:
         result = WlanHostedNetworkSetProperty(handle, WLAN_HOSTED_NETWORK_OPCODE(opcode_val), data_size, p_data)
     return result
@@ -759,7 +785,12 @@ def setPsdIeDataList(str_format: Optional[str], data_list: List[bytes]) -> int:
         "packing has no caller-tested implementation in this library yet."
     )
 
-def ihvControl(wireless_interface: WirelessInterface, control_type: str, in_buffer: bytes, out_buffer_size: int = 0) -> Tuple[int, bytes, int]:
+def ihvControl(
+    wireless_interface: WirelessInterface,
+    control_type: str,
+    in_buffer: bytes,
+    out_buffer_size: int = 0,
+) -> Tuple[int, bytes, int]:
     ct_val = None
     for k, v in WLAN_IHV_CONTROL_TYPE_DICT.items():
         if v == control_type:
@@ -767,21 +798,42 @@ def ihvControl(wireless_interface: WirelessInterface, control_type: str, in_buff
             break
     if ct_val is None:
         raise ValueError(f"Unknown IHV control type: {control_type}")
-        
+
     in_size = len(in_buffer)
     p_in = cast(create_string_buffer(in_buffer, in_size), c_void_p)
-    
+
     with WlanHandle() as handle:
-        res, p_out, returned = WlanIhvControl(handle, wireless_interface.guid, WLAN_IHV_CONTROL_TYPE(ct_val), in_size, p_in, out_buffer_size)
+        res, p_out, returned = WlanIhvControl(
+            handle,
+            wireless_interface.guid,
+            WLAN_IHV_CONTROL_TYPE(ct_val),
+            in_size,
+            p_in,
+            out_buffer_size,
+        )
         out_bytes = string_at(p_out, returned) if p_out else b""
     return res, out_bytes, returned
 
-def deviceServiceCommand(wireless_interface: WirelessInterface, device_service_guid: GUID, opcode: int, in_buffer: bytes, out_buffer_size: int = 0) -> Tuple[int, bytes, int]:
+def deviceServiceCommand(
+    wireless_interface: WirelessInterface,
+    device_service_guid: GUID,
+    opcode: int,
+    in_buffer: bytes,
+    out_buffer_size: int = 0,
+) -> Tuple[int, bytes, int]:
     in_size = len(in_buffer)
     p_in = cast(create_string_buffer(in_buffer, in_size), c_void_p)
-    
+
     with WlanHandle() as handle:
-        res, p_out, returned = WlanDeviceServiceCommand(handle, wireless_interface.guid, device_service_guid, opcode, in_size, p_in, out_buffer_size)
+        res, p_out, returned = WlanDeviceServiceCommand(
+            handle,
+            wireless_interface.guid,
+            device_service_guid,
+            opcode,
+            in_size,
+            p_in,
+            out_buffer_size,
+        )
         out_bytes = string_at(p_out, returned) if p_out else b""
     return res, out_bytes, returned
 
@@ -817,7 +869,7 @@ def setInterface(wireless_interface: WirelessInterface, opcode_item: str, data: 
         if val == opcode_item_ext:
             opcode_val = key
             break
-    
+
     if opcode_val is None:
         raise ValueError(f"Unknown opcode item: {opcode_item}")
 

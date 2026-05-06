@@ -53,19 +53,33 @@ markers = [
 packages = ["win32wifi"]
 
 [tool.ruff]
-line-length = 120
+# Win32 docstrings often quote MSDN signatures verbatim, and ctypes Structure
+# field tuples can be long — 140 keeps those readable without an E501 ignore.
+line-length = 140
 target-version = "py38"
 
 [tool.ruff.lint]
 # Enable Pyflakes (F), Pycodestyle (E, W), Isort (I), and others
 select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4"]
 ignore = [
+    # PEP 8 naming rules that conflict with the Windows Native Wifi API surface
+    # (we intentionally mirror Microsoft's CamelCase/ALL_CAPS conventions).
+    "N801", # Class name should use CapWords (Win32 structs are ALL_CAPS)
     "N802", # Function name should be lowercase (Native API uses CamelCase)
     "N803", # Argument name should be lowercase
     "N806", # Variable in function should be lowercase
     "N815", # Variable in class should be lowercase
     "N816", # Variable in module should be lowercase
+    "N999", # Invalid module name (Win32NativeWifiApi/Win32Wifi are public API)
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# The low-level wrapper deliberately re-exports every ctypes symbol via
+# ``from ctypes import *``, and the high-level module pulls in everything
+# from the low-level module the same way. Ruff can't resolve names brought
+# in by star imports statically, but it all works at runtime.
+"win32wifi/Win32NativeWifiApi.py" = ["F403", "F405"]
+"win32wifi/Win32Wifi.py"          = ["F403", "F405"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["win32wifi"]

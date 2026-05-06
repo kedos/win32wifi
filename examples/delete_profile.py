@@ -22,10 +22,7 @@
 
 import sys
 
-from win32wifi.Win32Wifi import deleteProfile
-from win32wifi.Win32Wifi import getWirelessInterfaces
-from win32wifi.Win32Wifi import getWirelessProfiles
-from win32wifi.Win32Wifi import Win32WifiError
+from win32wifi.Win32Wifi import Win32WifiError, deleteProfile, getWirelessInterfaces, getWirelessProfiles
 
 
 def listProfiles(iface):

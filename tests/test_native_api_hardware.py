@@ -25,17 +25,21 @@
 Skipped by default. Run with ``pytest -m hardware`` on a Windows host that
 has at least one wireless adapter present.
 """
-import unittest
 import threading
+import unittest
 from ctypes import addressof
 
 import pytest
 
 from win32wifi.Win32NativeWifiApi import (
-    WlanOpenHandle, WlanCloseHandle, WlanEnumInterfaces, WlanFreeMemory,
-    WlanScan, WlanGetNetworkBssList, WlanGetAvailableNetworkList,
-    WlanGetProfileList, WlanGetProfile, WlanRegisterNotification,
-    ERROR_SUCCESS
+    ERROR_SUCCESS,
+    WlanCloseHandle,
+    WlanEnumInterfaces,
+    WlanFreeMemory,
+    WlanGetNetworkBssList,
+    WlanOpenHandle,
+    WlanRegisterNotification,
+    WlanScan,
 )
 
 
@@ -72,7 +76,7 @@ class TestWin32NativeWifiApi(unittest.TestCase):
                 if num > 0:
                     ifaces_pointer = addressof(wlan_ifaces.contents.InterfaceInfo)
                     wlan_iface_info_list = (data_type * num).from_address(ifaces_pointer)
-                    
+
                     ssid = "test"
                     for wlan_iface_info in wlan_iface_info_list:
                         WlanScan(handle, wlan_iface_info.InterfaceGuid, ssid)
@@ -111,8 +115,10 @@ class TestWin32NativeWifiApi(unittest.TestCase):
             def callback(wnd, p):
                 ev.set()
 
-            # Just register and unregister to see if it doesn't crash
-            cb = WlanRegisterNotification(handle, callback)
+            # Just register and unregister to see if it doesn't crash.
+            # ``_cb`` keeps the C callback wrapper alive for the duration of
+            # the wait — the binding is intentional even though we never read it.
+            _cb = WlanRegisterNotification(handle, callback)
             ev.wait(1) # We don't necessarily expect a notification immediately
         finally:
             WlanCloseHandle(handle)

@@ -23,7 +23,7 @@
 import ctypes
 from ctypes import *
 from enum import Enum
-from typing import Optional, Any, Tuple
+from typing import Any, Optional, Tuple
 
 try:
     from comtypes import GUID
@@ -48,12 +48,7 @@ except ImportError:
                 ctypes.memmove(ctypes.byref(self), ctypes.byref(src),
                                ctypes.sizeof(self))
 
-from ctypes.wintypes import BOOL
-from ctypes.wintypes import DWORD
-from ctypes.wintypes import HANDLE
-from ctypes.wintypes import LPWSTR
-from ctypes.wintypes import LPCWSTR
-
+from ctypes.wintypes import BOOL, DWORD, HANDLE, LPCWSTR, LPWSTR
 
 ERROR_SUCCESS = 0
 
@@ -145,7 +140,11 @@ DOT11_CIPHER_ALGORITHM_DICT = {0x00: "DOT11_CIPHER_ALGO_NONE",
                                0x06: "DOT11_CIPHER_ALGO_BIP",
                                0x07: "DOT11_CIPHER_ALGO_GCMP",
                                0x08: "DOT11_CIPHER_ALGO_GCMP_256",
-                               0x100: "DOT11_CIPHER_ALGO_WPA_USE_GROUP",
+                               # 0x100 is a single value with two MSDN aliases:
+                               # DOT11_CIPHER_ALGO_WPA_USE_GROUP and
+                               # DOT11_CIPHER_ALGO_RSN_USE_GROUP. We expose the RSN spelling
+                               # since RSN/WPA2 is the modern name; WPA-USE-GROUP was the
+                               # original WPA1 name kept for source compatibility.
                                0x100: "DOT11_CIPHER_ALGO_RSN_USE_GROUP",
                                0x101: "DOT11_CIPHER_ALGO_WEP",
                                0x80000000: "DOT11_CIPHER_ALGO_IHV_START",
@@ -239,7 +238,7 @@ class WLAN_NOTIFICATION_ACM_ENUM(Enum):
 
 class WLAN_NOTIFICATION_MSM_ENUM(Enum):
     wlan_notification_msm_start                         = 0
-    wlan_notification_msm_associating                   = 1 
+    wlan_notification_msm_associating                   = 1
     wlan_notification_msm_associated                    = 2
     wlan_notification_msm_authenticating                = 3
     wlan_notification_msm_connected                     = 4
@@ -530,7 +529,7 @@ class WLAN_PROFILE_INFO_LIST(Structure):
 
 class WLAN_NOTIFICATION_DATA(Structure):
     """
-        The WLAN_NOTIFICATION_DATA structure contains information provided 
+        The WLAN_NOTIFICATION_DATA structure contains information provided
         when receiving notifications.
 
         typedef struct _WLAN_NOTIFICATION_DATA {
@@ -540,7 +539,7 @@ class WLAN_NOTIFICATION_DATA(Structure):
           DWORD dwDataSize;
           PVOID pData;
         } WLAN_NOTIFICATION_DATA, *PWLAN_NOTIFICATION_DATA;
-    """ 
+    """
     _fields_ = [("NotificationSource", DWORD),
                 ("NotificationCode", DWORD),
                 ("InterfaceGuid", GUID),
@@ -548,9 +547,9 @@ class WLAN_NOTIFICATION_DATA(Structure):
                 ("pData", c_void_p)]
 
 
-class WLAN_NOTIFICATION_CALLBACK():
+class WLAN_NOTIFICATION_CALLBACK:
     """
-        The WLAN_NOTIFICATION_CALLBACK allback function prototype defines 
+        The WLAN_NOTIFICATION_CALLBACK allback function prototype defines
         the type of notification callback function.
 
         typedef VOID ( WINAPI *WLAN_NOTIFICATION_CALLBACK)(
@@ -658,7 +657,7 @@ WLAN_NOTIFICATION_DATA_ACM_TYPES_DICT = {
 
 def WlanRegisterNotification(hClientHandle, callback, pCallbackContext=None):
     """
-        The WlanRegisterNotification function is used to register and 
+        The WlanRegisterNotification function is used to register and
         unregister notifications on all wireless interfaces.
 
         DWORD WINAPI WlanRegisterNotification(
@@ -679,7 +678,7 @@ def WlanRegisterNotification(hClientHandle, callback, pCallbackContext=None):
 
     func_ref = wlanapi.WlanRegisterNotification
     func_ref.argtypes = [
-        HANDLE, 
+        HANDLE,
         DWORD,
         BOOL,
         WLAN_NOTIFICATION_CALLBACK_M,
@@ -694,11 +693,11 @@ def WlanRegisterNotification(hClientHandle, callback, pCallbackContext=None):
     pdwPrevNotifSource = None
 
     result = func_ref(hClientHandle,
-                      dwNotifSource, 
-                      bIgnoreDuplicate, 
-                      funcCallback, 
-                      pCallbackContext, 
-                      None, 
+                      dwNotifSource,
+                      bIgnoreDuplicate,
+                      funcCallback,
+                      pCallbackContext,
+                      None,
                       pdwPrevNotifSource)
 
     if result != ERROR_SUCCESS:
@@ -1247,7 +1246,14 @@ def WlanQueryInterface(hClientHandle: HANDLE, pInterfaceGuid: GUID, OpCode: WLAN
     return ppData
 
 
-def WlanSetProfile(hClientHandle: HANDLE, pInterfaceGuid: GUID, dwFlags: int, strProfileXml: str, strAllUserProfileSecurity: Optional[str] = None, bOverwrite: bool = True) -> int:
+def WlanSetProfile(
+    hClientHandle: HANDLE,
+    pInterfaceGuid: GUID,
+    dwFlags: int,
+    strProfileXml: str,
+    strAllUserProfileSecurity: Optional[str] = None,
+    bOverwrite: bool = True,
+) -> int:
     """
         DWORD WINAPI WlanSetProfile(
           _In_      HANDLE  hClientHandle,
@@ -1498,7 +1504,14 @@ def WlanSetAutoConfigParameter(hClientHandle: HANDLE, OpCode: WLAN_AUTOCONF_OPCO
     return result
 
 
-def WlanSaveTemporaryProfile(hClientHandle: HANDLE, pInterfaceGuid: GUID, strProfileName: str, strAllUserProfileSecurity: Optional[str], dwFlags: int, bOverwrite: bool) -> int:
+def WlanSaveTemporaryProfile(
+    hClientHandle: HANDLE,
+    pInterfaceGuid: GUID,
+    strProfileName: str,
+    strAllUserProfileSecurity: Optional[str],
+    dwFlags: int,
+    bOverwrite: bool,
+) -> int:
     """
         DWORD WINAPI WlanSaveTemporaryProfile(
           _In_       HANDLE     hClientHandle,
@@ -1568,7 +1581,15 @@ class EAP_METHOD_TYPE(Structure):
                 ("dwAuthorId", DWORD)]
 
 
-def WlanSetProfileEapUserData(hClientHandle: HANDLE, pInterfaceGuid: GUID, strProfileName: str, eapMethodType: EAP_METHOD_TYPE, dwFlags: int, dwEapUserDataSize: int, pbEapUserData: c_void_p) -> int:
+def WlanSetProfileEapUserData(
+    hClientHandle: HANDLE,
+    pInterfaceGuid: GUID,
+    strProfileName: str,
+    eapMethodType: EAP_METHOD_TYPE,
+    dwFlags: int,
+    dwEapUserDataSize: int,
+    pbEapUserData: c_void_p,
+) -> int:
     """
         DWORD WINAPI WlanSetProfileEapUserData(
           _In_ HANDLE          hClientHandle,
@@ -1591,7 +1612,13 @@ def WlanSetProfileEapUserData(hClientHandle: HANDLE, pInterfaceGuid: GUID, strPr
     return result
 
 
-def WlanSetProfileEapXmlUserData(hClientHandle: HANDLE, pInterfaceGuid: GUID, strProfileName: str, dwFlags: int, strEapXmlUserData: str) -> int:
+def WlanSetProfileEapXmlUserData(
+    hClientHandle: HANDLE,
+    pInterfaceGuid: GUID,
+    strProfileName: str,
+    dwFlags: int,
+    strEapXmlUserData: str,
+) -> int:
     """
         DWORD WINAPI WlanSetProfileEapXmlUserData(
           _In_ HANDLE     hClientHandle,
@@ -1865,7 +1892,9 @@ def WlanHostedNetworkInitSettings(hClientHandle: HANDLE) -> int:
     return result
 
 
-def WlanHostedNetworkQueryProperty(hClientHandle: HANDLE, OpCode: WLAN_HOSTED_NETWORK_OPCODE) -> Tuple[int, c_void_p, WLAN_OPCODE_VALUE_TYPE]:
+def WlanHostedNetworkQueryProperty(
+    hClientHandle: HANDLE, OpCode: WLAN_HOSTED_NETWORK_OPCODE
+) -> Tuple[int, c_void_p, WLAN_OPCODE_VALUE_TYPE]:
     """
         DWORD WINAPI WlanHostedNetworkQueryProperty(
           _In_       HANDLE                     hClientHandle,
@@ -1903,14 +1932,30 @@ def WlanHostedNetworkQuerySecondaryKey(hClientHandle: HANDLE) -> Tuple[int, c_ch
     """
     _check_wlanapi()
     func_ref = wlanapi.WlanHostedNetworkQuerySecondaryKey
-    func_ref.argtypes = [HANDLE, POINTER(DWORD), POINTER(c_char_p), POINTER(BOOL), POINTER(BOOL), POINTER(WLAN_HOSTED_NETWORK_REASON), c_void_p]
+    func_ref.argtypes = [
+        HANDLE,
+        POINTER(DWORD),
+        POINTER(c_char_p),
+        POINTER(BOOL),
+        POINTER(BOOL),
+        POINTER(WLAN_HOSTED_NETWORK_REASON),
+        c_void_p,
+    ]
     func_ref.restype = DWORD
     dwKeyLength = DWORD()
     ppucKeyData = c_char_p()
     pbIsPassphrase = BOOL()
     pbIsPersistent = BOOL()
     fail_reason = WLAN_HOSTED_NETWORK_REASON()
-    result = func_ref(hClientHandle, byref(dwKeyLength), byref(ppucKeyData), byref(pbIsPassphrase), byref(pbIsPersistent), byref(fail_reason), None)
+    result = func_ref(
+        hClientHandle,
+        byref(dwKeyLength),
+        byref(ppucKeyData),
+        byref(pbIsPassphrase),
+        byref(pbIsPersistent),
+        byref(fail_reason),
+        None,
+    )
     if result != ERROR_SUCCESS:
         raise Win32WifiError(f"WlanHostedNetworkQuerySecondaryKey failed (Reason: {fail_reason.value})", result)
     return dwKeyLength.value, ppucKeyData, bool(pbIsPassphrase.value), bool(pbIsPersistent.value)
@@ -1976,7 +2021,13 @@ def WlanHostedNetworkSetProperty(hClientHandle: HANDLE, OpCode: WLAN_HOSTED_NETW
     return result
 
 
-def WlanHostedNetworkSetSecondaryKey(hClientHandle: HANDLE, dwKeyLength: int, pucKeyData: bytes, bIsPassphrase: bool, bIsPersistent: bool) -> int:
+def WlanHostedNetworkSetSecondaryKey(
+    hClientHandle: HANDLE,
+    dwKeyLength: int,
+    pucKeyData: bytes,
+    bIsPassphrase: bool,
+    bIsPersistent: bool,
+) -> int:
     """
         DWORD WINAPI WlanHostedNetworkSetSecondaryKey(
           _In_       HANDLE                      hClientHandle,
@@ -2098,7 +2149,14 @@ WLAN_IHV_CONTROL_TYPE_DICT = {
 }
 
 
-def WlanIhvControl(hClientHandle: HANDLE, pInterfaceGuid: GUID, Type: WLAN_IHV_CONTROL_TYPE, dwInBufferSize: int, pvInBuffer: c_void_p, dwOutBufferSize: int) -> Tuple[int, c_void_p, int]:
+def WlanIhvControl(
+    hClientHandle: HANDLE,
+    pInterfaceGuid: GUID,
+    Type: WLAN_IHV_CONTROL_TYPE,
+    dwInBufferSize: int,
+    pvInBuffer: c_void_p,
+    dwOutBufferSize: int,
+) -> Tuple[int, c_void_p, int]:
     """
         DWORD WINAPI WlanIhvControl(
           _In_            HANDLE                hClientHandle,
@@ -2113,17 +2171,43 @@ def WlanIhvControl(hClientHandle: HANDLE, pInterfaceGuid: GUID, Type: WLAN_IHV_C
     """
     _check_wlanapi()
     func_ref = wlanapi.WlanIhvControl
-    func_ref.argtypes = [HANDLE, POINTER(GUID), WLAN_IHV_CONTROL_TYPE, DWORD, c_void_p, DWORD, c_void_p, POINTER(DWORD)]
+    func_ref.argtypes = [
+        HANDLE,
+        POINTER(GUID),
+        WLAN_IHV_CONTROL_TYPE,
+        DWORD,
+        c_void_p,
+        DWORD,
+        c_void_p,
+        POINTER(DWORD),
+    ]
     func_ref.restype = DWORD
     pvOutBuffer = create_string_buffer(dwOutBufferSize) if dwOutBufferSize > 0 else None
     dwBytesReturned = DWORD()
-    result = func_ref(hClientHandle, byref(pInterfaceGuid), Type, dwInBufferSize, pvInBuffer, dwOutBufferSize, pvOutBuffer, byref(dwBytesReturned))
+    result = func_ref(
+        hClientHandle,
+        byref(pInterfaceGuid),
+        Type,
+        dwInBufferSize,
+        pvInBuffer,
+        dwOutBufferSize,
+        pvOutBuffer,
+        byref(dwBytesReturned),
+    )
     if result != ERROR_SUCCESS:
         raise Win32WifiError("WlanIhvControl failed", result)
     return result, pvOutBuffer, dwBytesReturned.value
 
 
-def WlanDeviceServiceCommand(hClientHandle: HANDLE, pInterfaceGuid: GUID, pDeviceServiceGuid: GUID, dwOpCode: int, dwInBufferSize: int, pvInBuffer: c_void_p, dwOutBufferSize: int) -> Tuple[int, c_void_p, int]:
+def WlanDeviceServiceCommand(
+    hClientHandle: HANDLE,
+    pInterfaceGuid: GUID,
+    pDeviceServiceGuid: GUID,
+    dwOpCode: int,
+    dwInBufferSize: int,
+    pvInBuffer: c_void_p,
+    dwOutBufferSize: int,
+) -> Tuple[int, c_void_p, int]:
     """
         DWORD WINAPI WlanDeviceServiceCommand(
           _In_            HANDLE     hClientHandle,
@@ -2139,11 +2223,31 @@ def WlanDeviceServiceCommand(hClientHandle: HANDLE, pInterfaceGuid: GUID, pDevic
     """
     _check_wlanapi()
     func_ref = wlanapi.WlanDeviceServiceCommand
-    func_ref.argtypes = [HANDLE, POINTER(GUID), POINTER(GUID), DWORD, DWORD, c_void_p, DWORD, c_void_p, POINTER(DWORD)]
+    func_ref.argtypes = [
+        HANDLE,
+        POINTER(GUID),
+        POINTER(GUID),
+        DWORD,
+        DWORD,
+        c_void_p,
+        DWORD,
+        c_void_p,
+        POINTER(DWORD),
+    ]
     func_ref.restype = DWORD
     pvOutBuffer = create_string_buffer(dwOutBufferSize) if dwOutBufferSize > 0 else None
     dwBytesReturned = DWORD()
-    result = func_ref(hClientHandle, byref(pInterfaceGuid), byref(pDeviceServiceGuid), dwOpCode, dwInBufferSize, pvInBuffer, dwOutBufferSize, pvOutBuffer, byref(dwBytesReturned))
+    result = func_ref(
+        hClientHandle,
+        byref(pInterfaceGuid),
+        byref(pDeviceServiceGuid),
+        dwOpCode,
+        dwInBufferSize,
+        pvInBuffer,
+        dwOutBufferSize,
+        pvOutBuffer,
+        byref(dwBytesReturned),
+    )
     if result != ERROR_SUCCESS:
         raise Win32WifiError("WlanDeviceServiceCommand failed", result)
     return result, pvOutBuffer, dwBytesReturned.value

@@ -21,6 +21,7 @@
 #
 
 import pprint
+
 from win32wifi import Win32Wifi
 
 if __name__ == "__main__":

@@ -5,7 +5,6 @@ import pytest
 
 from win32wifi import Win32NativeWifiApi
 
-
 # Common Wlan* functions whose return value is checked against ERROR_SUCCESS.
 # Default them to 0 so test setup is succinct; tests that exercise error paths
 # override the relevant entry explicitly.

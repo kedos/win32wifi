@@ -20,7 +20,7 @@
 # Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
 
-from win32wifi.Win32Wifi import getWirelessInterfaces, getInterfaceCapability
+from win32wifi.Win32Wifi import getInterfaceCapability, getWirelessInterfaces
 
 if __name__ == "__main__":
     ifaces = getWirelessInterfaces()

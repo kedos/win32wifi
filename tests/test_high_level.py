@@ -8,13 +8,12 @@ import ctypes
 import logging
 import threading
 import warnings
+from ctypes import c_bool, c_long, c_ulong
 from unittest.mock import patch
 
 import pytest
 
-from ctypes import c_bool, c_long, c_ulong
-
-from win32wifi import Win32NativeWifiApi, Win32Wifi
+from win32wifi import Win32Wifi
 from win32wifi.Win32NativeWifiApi import (
     HANDLE,
     WLAN_AVAILABLE_NETWORK_LIST,
@@ -439,8 +438,10 @@ def test_unregister_notification_thread_safe_under_concurrent_calls():
          patch.object(Win32Wifi, "WlanCloseHandle", return_value=0):
         t1 = threading.Thread(target=_runner, args=(notif_a,))
         t2 = threading.Thread(target=_runner, args=(notif_b,))
-        t1.start(); t2.start()
-        t1.join(); t2.join()
+        t1.start()
+        t2.start()
+        t1.join()
+        t2.join()
 
     assert handle_a not in Win32Wifi._notif_handles
     assert handle_b not in Win32Wifi._notif_handles

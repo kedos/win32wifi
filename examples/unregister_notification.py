@@ -22,11 +22,8 @@
 
 import threading
 from datetime import datetime
-from win32wifi.Win32Wifi import (
-    getWirelessInterfaces,
-    registerNotification,
-    unregisterNotification
-)
+
+from win32wifi.Win32Wifi import getWirelessInterfaces, registerNotification, unregisterNotification
 
 stop_event = threading.Event()
 

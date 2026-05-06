@@ -20,8 +20,7 @@
 # Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
 
-from win32wifi.Win32Wifi import getWirelessInterfaces
-from win32wifi.Win32Wifi import getWirelessNetworkBssList
+from win32wifi.Win32Wifi import getWirelessInterfaces, getWirelessNetworkBssList
 
 if __name__ == "__main__":
     ifaces = getWirelessInterfaces()
