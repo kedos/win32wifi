@@ -16,8 +16,12 @@ DONE
  + WlanReasonCodeToString
  + WlanSetProfile
  + WlanGetInterfaceCapability
+ + WlanRenameProfile
+ + WlanSetProfileList
+ + WlanSetProfilePosition
+ + WlanSetInterface
 
-PENDING
+PENDING (Low Priority / Specialized)
  + WlanAllocateMemory
  + WlanExtractPsdIEDataList
  + WlanGetFilterList
@@ -27,16 +31,13 @@ PENDING
  + WlanIhvControl
  + WlanQueryAutoConfigParameter
  + WlanRegisterVirtualStationNotification
- + WlanRenameProfile
  + WlanSaveTemporaryProfile
  + WlanSetAutoConfigParameter
  + WlanSetFilterList
- + WlanSetInterface
  + WlanSetProfileCustomUserData
  + WlanSetProfileEapUserData
  + WlanSetProfileEapXmlUserData
- + WlanSetProfileList
- + WlanSetProfilePosition
  + WlanSetPsdIeDataList
  + WlanSetSecuritySettings
  + WlanUIEditProfile
+ + WlanDeviceService*
