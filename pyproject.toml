@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "win32wifi"
+version = "0.2.0"
+description = "Python Windows Wifi - bindings for the Windows Native Wifi API"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "GPL-3.0-or-later"}
+authors = [
+    {name = "Shaked Gitelman", email = "shaked.dev@gmail.com"},
+    {name = "Andres Blanco", email = "6e726d@gmail.com"}
+]
+keywords = ["windows", "win32", "wifi", "wlan", "wlanapi", "wlanapi.dll"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "comtypes",
+    "xmltodict",
+]
+
+[project.urls]
+Homepage = "https://github.com/almondg/win32wifi"
+
+[tool.setuptools]
+packages = ["win32wifi"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py38"
+
+[tool.ruff.lint]
+# Enable Pyflakes (F), Pycodestyle (E, W), Isort (I), and others
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4"]
+ignore = [
+    "N802", # Function name should be lowercase (Native API uses CamelCase)
+    "N803", # Argument name should be lowercase
+    "N806", # Variable in function should be lowercase
+    "N815", # Variable in class should be lowercase
+    "N816", # Variable in module should be lowercase
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["win32wifi"]

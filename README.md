@@ -1,31 +1,59 @@
 # win32wifi (Python Windows Wifi)
 
-win32wifi is a set of Python bindings for the Windows Native Wifi API.
+win32wifi is a set of Python bindings for the Windows Native Wifi API, modernized for Python 3.8+.
 
-The Native Wifi API is designed for C/C++ developers. Programmers should be
-familiar with wireless networking concepts and terminology.
+The Native Wifi API is designed for developers working with wireless networking on Windows. Programmers should be familiar with wireless networking concepts and terminology.
+
+## Requirements
+
+- Windows Operating System
+- Python 3.8 or later
+- `comtypes`
+- `xmltodict`
+
+## Installation
+
+You can install the library directly from the source:
+
+```bash
+pip install .
+```
+
+## Features
+
+- Enumerate wireless interfaces
+- Scan for available networks
+- Retrieve BSS lists (with Information Elements)
+- Manage wireless profiles (get, set, delete)
+- Connect to and disconnect from networks
+- Monitor WiFi notifications
+- Query interface capabilities
+
+## Usage Example
+
+```python
+from win32wifi import Win32Wifi
+
+# List interfaces
+interfaces = Win32Wifi.getWirelessInterfaces()
+for iface in interfaces:
+    print(f"Interface: {iface.description} ({iface.state_string})")
+
+    # List available networks
+    networks = Win32Wifi.getWirelessAvailableNetworkList(iface)
+    for network in networks:
+        print(f"  SSID: {network.ssid.decode('utf-8', 'replace')}, Signal: {network.signal_quality}%")
+```
 
 ## Authors
 
-Andres Blanco 	(6e726d)
-
-Shaked Gitelman (almondg)
+- Andres Blanco (6e726d)
+- Shaked Gitelman (almondg)
 
 ## License
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+GNU General Public License v3 or later (GPLv3+). See `LICENSE` for details.
 
 ## References
 
- - Windows Native Wifi API -- http://msdn.microsoft.com/en-us/library/windows/desktop/ms706556(v=vs.85).aspx
+- [Windows Native Wifi API](https://learn.microsoft.com/en-us/windows/win32/nativewifi/portal)
