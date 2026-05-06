@@ -1,5 +1,7 @@
 # win32wifi - Windows Native Wifi Api Python library.
-# Copyright (C) 2016 - Shaked Gitelman
+# Copyright (C) 2016 - 2024 Shaked Gitelman
+#
+# Forked from: PyWiWi - <https://github.com/6e726d/PyWiWi>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# Author: Andres Blanco     (6e726d)    <6e726d@gmail.com>
 # Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
 
@@ -22,10 +25,10 @@ import sys
 from win32wifi.Win32Wifi import deleteProfile
 from win32wifi.Win32Wifi import getWirelessInterfaces
 from win32wifi.Win32Wifi import getWirelessProfiles
+from win32wifi.Win32Wifi import Win32WifiError
 
 
 def listProfiles(iface):
-    guid = iface.guid
     profiles = getWirelessProfiles(iface)
     for profile in profiles:
         print(profile.name)
@@ -35,18 +38,18 @@ def listProfiles(iface):
 def delProfile(iface, profile_name):
     try:
         deleteProfile(iface, profile_name)
-    except Exception as e:
-        if e.args[1] == 1168:
-            print("Profile '%s' does not exist." % profile_name)
+        print(f"Profile '{profile_name}' deleted successfully.")
+    except Win32WifiError as e:
+        if e.error_code == 1168:
+            print(f"Profile '{profile_name}' does not exist.")
         else:
-            raise e
+            print(f"Failed to delete profile '{profile_name}': {e}")
 
 
 if __name__ == "__main__":
-
     if len(sys.argv) > 2:
         print("Usage: python delete_profile.py [profile_name]")
-        exit(1)
+        sys.exit(1)
 
     ifaces = getWirelessInterfaces()
 

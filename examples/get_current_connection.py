@@ -1,5 +1,7 @@
 # win32wifi - Windows Native Wifi Api Python library.
-# Copyright (C) 2016 - Shaked Gitelman
+# Copyright (C) 2016 - 2024 Shaked Gitelman
+#
+# Forked from: PyWiWi - <https://github.com/6e726d/PyWiWi>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,18 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# Author: Andres Blanco     (6e726d)    <6e726d@gmail.com>
 # Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
 
 import pprint
-
 from win32wifi import Win32Wifi
 
 if __name__ == "__main__":
     ifaces = Win32Wifi.getWirelessInterfaces()
     pp = pprint.PrettyPrinter(indent=4)
     for iface in ifaces:
-        guid = iface.guid
-        res = Win32Wifi.queryInterface(iface, "current_connection")  # wlan_intf_opcode_current_connection
-        pp.pprint(res[1])
-        
+        print(f"Interface: {iface.description}")
+        try:
+            _, connection_info = Win32Wifi.queryInterface(iface, "current_connection")
+            pp.pprint(connection_info)
+        except Win32Wifi.Win32WifiError as e:
+            print(f"Could not query interface: {e}")
+        print("-" * 20)

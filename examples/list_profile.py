@@ -1,5 +1,5 @@
 # win32wifi - Windows Native Wifi Api Python library.
-# Copyright (C) 2016 - Shaked Gitelman
+# Copyright (C) 2016 - 2024 Shaked Gitelman
 #
 # Forked from: PyWiWi - <https://github.com/6e726d/PyWiWi>
 #
@@ -26,15 +26,11 @@ from win32wifi.Win32Wifi import getWirelessProfiles
 if __name__ == "__main__":
     ifaces = getWirelessInterfaces()
     for iface in ifaces:
-        print(iface)
-        guid = iface.guid
+        print(f"Interface: {iface.description}")
         profiles = getWirelessProfiles(iface)
-        print(profiles)
+        print(f"Found {len(profiles)} profile(s):")
         for profile in profiles:
-            if profile.name == "Pretty Fly for a WiFi":
-                print("Deleting profile (%s)" % profile.name)
-            print(profile.name)
-            # print(profile)
-            # print(type(profile))
+            print(f"Profile Name: {profile.name}")
+            print(f"SSID: {profile.ssid}")
             print("-" * 20)
         print()

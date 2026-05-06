@@ -1,5 +1,7 @@
 # win32wifi - Windows Native Wifi Api Python library.
-# Copyright (C) 2016 - Shaked Gitelman
+# Copyright (C) 2016 - 2024 Shaked Gitelman
+#
+# Forked from: PyWiWi - <https://github.com/6e726d/PyWiWi>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -14,27 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# Author: Andres Blanco     (6e726d)    <6e726d@gmail.com>
 # Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
 
-import sys
-
-
 from win32wifi.Win32Wifi import getWirelessInterfaces
-from win32wifi.Win32Wifi import getWirelessAvailableNetworkList
 from win32wifi.Win32Wifi import disconnect
+
 
 if __name__ == "__main__":
     ifaces = getWirelessInterfaces()
-    print(ifaces)
-    print(len(ifaces))
+    print(f"Found {len(ifaces)} wireless interface(s).")
     for iface in ifaces:
+        print(f"Disconnecting interface: {iface.description}")
         disconnect(iface)
-        print(iface)
-        guid = iface.guid
-        networks = getWirelessAvailableNetworkList(iface)
-        print()
-        for network in networks:
-            print(network)
-            print("-" * 20)
-        print()
+        print(f"Interface state: {iface.state_string}")
+        print("-" * 20)

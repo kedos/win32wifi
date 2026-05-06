@@ -20,17 +20,17 @@
 # Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
 
-from win32wifi.Win32Wifi import getWirelessInterfaces
-from win32wifi.Win32Wifi import getWirelessAvailableNetworkList
+from win32wifi.Win32Wifi import getWirelessInterfaces, getInterfaceCapability
 
 if __name__ == "__main__":
     ifaces = getWirelessInterfaces()
     print(f"Found {len(ifaces)} wireless interface(s).")
     for iface in ifaces:
         print(f"Interface: {iface.description}")
-        networks = getWirelessAvailableNetworkList(iface)
-        print(f"Found {len(networks)} available network(s):")
-        for network in networks:
-            print(network)
-            print("-" * 20)
-        print()
+        try:
+            capabilities = getInterfaceCapability(iface)
+            print("Capabilities:")
+            print(capabilities)
+        except Exception as e:
+            print(f"  Error getting capabilities: {e}")
+        print("-" * 20)

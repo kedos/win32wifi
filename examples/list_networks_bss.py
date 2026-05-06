@@ -1,5 +1,5 @@
 # win32wifi - Windows Native Wifi Api Python library.
-# Copyright (C) 2016 - Shaked Gitelman
+# Copyright (C) 2016 - 2024 Shaked Gitelman
 #
 # Forked from: PyWiWi - <https://github.com/6e726d/PyWiWi>
 #
@@ -19,16 +19,16 @@
 # Author: Andres Blanco     (6e726d)    <6e726d@gmail.com>
 # Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
+
 from win32wifi.Win32Wifi import getWirelessInterfaces
 from win32wifi.Win32Wifi import getWirelessNetworkBssList
 
 if __name__ == "__main__":
     ifaces = getWirelessInterfaces()
     for iface in ifaces:
-        print(iface)
-        guid = iface.guid
+        print(f"Interface: {iface.description}")
         bsss = getWirelessNetworkBssList(iface)
-        print()
+        print(f"Found {len(bsss)} BSS entry(ies):")
         for bss in bsss:
             print(bss)
             print("-" * 20)
