@@ -32,7 +32,18 @@ jobs:
     - name: Run mocked tests (no hardware)
       run: pytest -v
 
+    - name: Enable WLAN AutoConfig service
+      shell: pwsh
+      run: |
+        try {
+          Set-Service -Name Wlansvc -StartupType Manual -ErrorAction Stop
+          Start-Service -Name Wlansvc -ErrorAction Stop
+          $svc = Get-Service -Name Wlansvc
+          Write-Host "Wlansvc status: $($svc.Status)"
+        } catch {
+          Write-Host "Wlansvc could not be started (expected on runners without a wifi NIC): $_"
+        }
+
     - name: Run hardware tests
       run: pytest -v -m hardware
-      continue-on-error: true  # green even on runners without a wifi adapter
 
