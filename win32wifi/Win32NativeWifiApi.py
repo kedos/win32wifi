@@ -1307,6 +1307,858 @@ def WlanGetInterfaceCapability(hClientHandle: HANDLE, pInterfaceGuid: GUID) -> P
     return ppCapability
 
 
+def WlanAllocateMemory(dwMemorySize: int) -> c_void_p:
+    """
+        PVOID WINAPI WlanAllocateMemory(
+          _In_ DWORD dwMemorySize
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanAllocateMemory
+    func_ref.argtypes = [DWORD]
+    func_ref.restype = c_void_p
+    result = func_ref(dwMemorySize)
+    if not result:
+        raise Win32WifiError("WlanAllocateMemory failed", 8) # ERROR_NOT_ENOUGH_MEMORY
+    return result
+
+
+class DOT11_NETWORK(Structure):
+    """
+        typedef struct _DOT11_NETWORK {
+          DOT11_SSID     dot11Ssid;
+          DOT11_BSS_TYPE dot11BssType;
+        } DOT11_NETWORK, *PDOT11_NETWORK;
+    """
+    _fields_ = [("dot11Ssid", DOT11_SSID),
+                ("dot11BssType", DOT11_BSS_TYPE)]
+
+
+class WLAN_FILTER_LIST(Structure):
+    """
+        typedef struct _WLAN_FILTER_LIST {
+          DWORD         dwNumberOfItems;
+          DWORD         dwIndex;
+          DOT11_NETWORK Network[1];
+        } WLAN_FILTER_LIST, *PWLAN_FILTER_LIST;
+    """
+    _fields_ = [("dwNumberOfItems", DWORD),
+                ("dwIndex", DWORD),
+                ("Network", DOT11_NETWORK * 1)]
+
+
+WLAN_FILTER_LIST_TYPE = c_int
+WLAN_FILTER_LIST_TYPE_DICT = {
+    0: "wlan_filter_list_type_gp_permit",
+    1: "wlan_filter_list_type_gp_deny",
+    2: "wlan_filter_list_type_user_permit",
+    3: "wlan_filter_list_type_user_deny"
+}
+
+WLAN_UI_COMPLETION_SOURCE = c_int
+WLAN_UI_COMPLETION_SOURCE_DICT = {
+    0: "wlan_ui_completion_source_unknown",
+    1: "wlan_ui_completion_source_user",
+    2: "wlan_ui_completion_source_system"
+}
+
+def WlanGetFilterList(hClientHandle: HANDLE, wlanFilterListType: int) -> POINTER(WLAN_FILTER_LIST):
+    """
+        DWORD WINAPI WlanGetFilterList(
+          _In_       HANDLE             hClientHandle,
+          _In_       WLAN_FILTER_LIST_TYPE wlanFilterListType,
+          _Reserved_ PVOID              pReserved,
+          _Out_      PWLAN_FILTER_LIST  *ppWlanFilterList
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanGetFilterList
+    func_ref.argtypes = [HANDLE, c_int, c_void_p, POINTER(POINTER(WLAN_FILTER_LIST))]
+    func_ref.restype = DWORD
+    ppFilterList = pointer(WLAN_FILTER_LIST())
+    result = func_ref(hClientHandle, wlanFilterListType, None, byref(ppFilterList))
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanGetFilterList failed", result)
+    return ppFilterList
+
+
+def WlanSetFilterList(hClientHandle: HANDLE, wlanFilterListType: int, pWlanFilterList: Optional[WLAN_FILTER_LIST]) -> int:
+    """
+        DWORD WINAPI WlanSetFilterList(
+          _In_       HANDLE             hClientHandle,
+          _In_       WLAN_FILTER_LIST_TYPE wlanFilterListType,
+          _In_opt_   const PWLAN_FILTER_LIST pWlanFilterList,
+          _Reserved_ PVOID              pReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanSetFilterList
+    func_ref.argtypes = [HANDLE, c_int, POINTER(WLAN_FILTER_LIST), c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle, wlanFilterListType, pWlanFilterList, None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanSetFilterList failed", result)
+    return result
+
+
+WLAN_AUTOCONF_OPCODE = c_uint
+WLAN_AUTOCONF_OPCODE_DICT = {
+    0: "wlan_autoconf_opcode_start",
+    1: "wlan_autoconf_opcode_show_denied_networks",
+    2: "wlan_autoconf_opcode_power_setting",
+    3: "wlan_autoconf_opcode_only_use_group_profiles_for_allowed_networks",
+    4: "wlan_autoconf_opcode_allow_explicit_creds",
+    5: "wlan_autoconf_opcode_block_period",
+    6: "wlan_autoconf_opcode_allow_virtual_station_extensibility",
+    7: "wlan_autoconf_opcode_end"
+}
+
+
+def WlanQueryAutoConfigParameter(hClientHandle: HANDLE, OpCode: WLAN_AUTOCONF_OPCODE) -> Tuple[POINTER(Any), int]:
+    """
+        DWORD WINAPI WlanQueryAutoConfigParameter(
+          _In_       HANDLE           hClientHandle,
+          _In_       WLAN_AUTOCONF_OPCODE OpCode,
+          _Reserved_ PVOID            pReserved,
+          _Out_      PDWORD           pdwDataSize,
+          _Out_      PVOID            *ppData,
+          _Out_opt_  PWLAN_OPCODE_VALUE_TYPE pWlanOpcodeValueType
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanQueryAutoConfigParameter
+    func_ref.argtypes = [HANDLE, WLAN_AUTOCONF_OPCODE, c_void_p, POINTER(DWORD), POINTER(c_void_p), POINTER(WLAN_OPCODE_VALUE_TYPE)]
+    func_ref.restype = DWORD
+    dwDataSize = DWORD()
+    ppData = c_void_p()
+    pWlanOpcodeValueType = WLAN_OPCODE_VALUE_TYPE()
+    result = func_ref(hClientHandle, OpCode, None, byref(dwDataSize), byref(ppData), byref(pWlanOpcodeValueType))
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanQueryAutoConfigParameter failed", result)
+    return ppData, dwDataSize.value
+
+
+def WlanSetAutoConfigParameter(hClientHandle: HANDLE, OpCode: WLAN_AUTOCONF_OPCODE, dwDataSize: int, pData: c_void_p) -> int:
+    """
+        DWORD WINAPI WlanSetAutoConfigParameter(
+          _In_       HANDLE           hClientHandle,
+          _In_       WLAN_AUTOCONF_OPCODE OpCode,
+          _In_       DWORD            dwDataSize,
+          _In_       const PVOID      pData,
+          _Reserved_ PVOID            pReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanSetAutoConfigParameter
+    func_ref.argtypes = [HANDLE, WLAN_AUTOCONF_OPCODE, DWORD, c_void_p, c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle, OpCode, dwDataSize, pData, None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanSetAutoConfigParameter failed", result)
+    return result
+
+
+def WlanSaveTemporaryProfile(hClientHandle: HANDLE, pInterfaceGuid: GUID, strProfileName: str, strAllUserProfileSecurity: Optional[str], dwFlags: int, bOverwrite: bool) -> int:
+    """
+        DWORD WINAPI WlanSaveTemporaryProfile(
+          _In_       HANDLE     hClientHandle,
+          _In_       const GUID *pInterfaceGuid,
+          _In_       LPCWSTR    strProfileName,
+          _In_opt_   LPCWSTR    strAllUserProfileSecurity,
+          _In_       DWORD      dwFlags,
+          _In_       BOOL       bOverwrite,
+          _Reserved_ PVOID      pReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanSaveTemporaryProfile
+    func_ref.argtypes = [HANDLE, POINTER(GUID), LPCWSTR, LPCWSTR, DWORD, BOOL, c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle, byref(pInterfaceGuid), strProfileName, strAllUserProfileSecurity, dwFlags, bOverwrite, None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanSaveTemporaryProfile failed for {strProfileName}", result)
+    return result
+
+
+def WlanUIEditProfile(dwClientVersion: int, strProfileName: str, pInterfaceGuid: GUID, hWnd: int, wlCompletionSource: int) -> int:
+    """
+        DWORD WINAPI WlanUIEditProfile(
+          _In_ DWORD dwClientVersion,
+          _In_ LPCWSTR strProfileName,
+          _In_ GUID *pInterfaceGuid,
+          _In_ HWND hWnd,
+          _In_ WLAN_UI_COMPLETION_SOURCE wlCompletionSource,
+          _In_ PVOID pReserved,
+          _Out_ PWLAN_REASON_CODE pWlanReasonCode
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanUIEditProfile
+    func_ref.argtypes = [DWORD, LPCWSTR, POINTER(GUID), HANDLE, c_int, c_void_p, POINTER(WLAN_REASON_CODE)]
+    func_ref.restype = DWORD
+    reason_code = WLAN_REASON_CODE()
+    # hWnd is a window handle, wlCompletionSource is an enum
+    result = func_ref(dwClientVersion, strProfileName, byref(pInterfaceGuid), hWnd, wlCompletionSource, None, byref(reason_code))
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanUIEditProfile failed (Reason: {reason_code.value})", result)
+    return result
+
+
+class EAP_TYPE(Structure):
+    """
+        typedef struct _EAP_TYPE {
+          BYTE  type;
+          DWORD dwVendorId;
+          DWORD dwVendorType;
+        } EAP_TYPE;
+    """
+    _fields_ = [("type", c_ubyte),
+                ("dwVendorId", DWORD),
+                ("dwVendorType", DWORD)]
+
+
+class EAP_METHOD_TYPE(Structure):
+    """
+        typedef struct _EAP_METHOD_TYPE {
+          EAP_TYPE eapType;
+          DWORD    dwAuthorId;
+        } EAP_METHOD_TYPE;
+    """
+    _fields_ = [("eapType", EAP_TYPE),
+                ("dwAuthorId", DWORD)]
+
+
+def WlanSetProfileEapUserData(hClientHandle: HANDLE, pInterfaceGuid: GUID, strProfileName: str, eapMethodType: EAP_METHOD_TYPE, dwFlags: int, dwEapUserDataSize: int, pbEapUserData: c_void_p) -> int:
+    """
+        DWORD WINAPI WlanSetProfileEapUserData(
+          _In_ HANDLE          hClientHandle,
+          _In_ const GUID      *pInterfaceGuid,
+          _In_ LPCWSTR         strProfileName,
+          _In_ EAP_METHOD_TYPE eapMethodType,
+          _In_ DWORD           dwFlags,
+          _In_ DWORD           dwEapUserDataSize,
+          _In_ const LPBYTE    pbEapUserData,
+               PVOID           pReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanSetProfileEapUserData
+    func_ref.argtypes = [HANDLE, POINTER(GUID), LPCWSTR, EAP_METHOD_TYPE, DWORD, DWORD, c_void_p, c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle, byref(pInterfaceGuid), strProfileName, eapMethodType, dwFlags, dwEapUserDataSize, pbEapUserData, None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanSetProfileEapUserData failed for {strProfileName}", result)
+    return result
+
+
+def WlanSetProfileEapXmlUserData(hClientHandle: HANDLE, pInterfaceGuid: GUID, strProfileName: str, dwFlags: int, strEapXmlUserData: str) -> int:
+    """
+        DWORD WINAPI WlanSetProfileEapXmlUserData(
+          _In_ HANDLE     hClientHandle,
+          _In_ const GUID *pInterfaceGuid,
+          _In_ LPCWSTR    strProfileName,
+          _In_ DWORD      dwFlags,
+          _In_ LPCWSTR    strEapXmlUserData,
+               PVOID      pReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanSetProfileEapXmlUserData
+    func_ref.argtypes = [HANDLE, POINTER(GUID), LPCWSTR, DWORD, LPCWSTR, c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle, byref(pInterfaceGuid), strProfileName, dwFlags, strEapXmlUserData, None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanSetProfileEapXmlUserData failed for {strProfileName}", result)
+    return result
+
+
+WLAN_SECURABLE_OBJECT = c_int
+WLAN_SECURABLE_OBJECT_DICT = {
+    0: "wlan_securable_object_permit_list",
+    1: "wlan_securable_object_deny_list",
+    2: "wlan_securable_object_acm_settings",
+    3: "wlan_securable_object_profile_list",
+    4: "wlan_securable_object_profile",
+    5: "wlan_securable_object_ihv_settings",
+    6: "wlan_securable_object_active_setting"
+}
+
+
+def WlanGetSecuritySettings(hClientHandle: HANDLE, SecurableObject: WLAN_SECURABLE_OBJECT) -> Tuple[WLAN_OPCODE_VALUE_TYPE, str, int]:
+    """
+        DWORD WINAPI WlanGetSecuritySettings(
+          _In_            HANDLE                hClientHandle,
+          _In_            WLAN_SECURABLE_OBJECT SecurableObject,
+          _Out_opt_       PWLAN_OPCODE_VALUE_TYPE pValueType,
+          _Out_           LPWSTR                *pstrCurrentSDDL,
+          _Out_           PDWORD                pdwGrantedAccess
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanGetSecuritySettings
+    func_ref.argtypes = [HANDLE, WLAN_SECURABLE_OBJECT, POINTER(WLAN_OPCODE_VALUE_TYPE), POINTER(LPWSTR), POINTER(DWORD)]
+    func_ref.restype = DWORD
+    value_type = WLAN_OPCODE_VALUE_TYPE()
+    sddl = LPWSTR()
+    granted_access = DWORD()
+    result = func_ref(hClientHandle, SecurableObject, byref(value_type), byref(sddl), byref(granted_access))
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanGetSecuritySettings failed", result)
+    return value_type, sddl.value, granted_access.value
+
+
+def WlanSetSecuritySettings(hClientHandle: HANDLE, SecurableObject: WLAN_SECURABLE_OBJECT, strModifiedSDDL: str) -> int:
+    """
+        DWORD WINAPI WlanSetSecuritySettings(
+          _In_ HANDLE                hClientHandle,
+          _In_ WLAN_SECURABLE_OBJECT SecurableObject,
+          _In_ LPCWSTR               strModifiedSDDL
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanSetSecuritySettings
+    func_ref.argtypes = [HANDLE, WLAN_SECURABLE_OBJECT, LPCWSTR]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle, SecurableObject, strModifiedSDDL)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanSetSecuritySettings failed", result)
+    return result
+
+
+def WlanGetProfileCustomUserData(hClientHandle: HANDLE, pInterfaceGuid: GUID, strProfileName: str) -> Tuple[int, c_void_p]:
+    """
+        DWORD WINAPI WlanGetProfileCustomUserData(
+          _In_       HANDLE     hClientHandle,
+          _In_       const GUID *pInterfaceGuid,
+          _In_       LPCWSTR    strProfileName,
+          _Reserved_ PVOID      pReserved,
+          _Out_      PDWORD     pdwDataSize,
+          _Out_      PBYTE      *ppData
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanGetProfileCustomUserData
+    func_ref.argtypes = [HANDLE, POINTER(GUID), LPCWSTR, c_void_p, POINTER(DWORD), POINTER(c_void_p)]
+    func_ref.restype = DWORD
+    dwDataSize = DWORD()
+    ppData = c_void_p()
+    result = func_ref(hClientHandle, byref(pInterfaceGuid), strProfileName, None, byref(dwDataSize), byref(ppData))
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanGetProfileCustomUserData failed for {strProfileName}", result)
+    return dwDataSize.value, ppData
+
+
+def WlanSetProfileCustomUserData(hClientHandle: HANDLE, pInterfaceGuid: GUID, strProfileName: str, dwDataSize: int, pData: c_void_p) -> int:
+    """
+        DWORD WINAPI WlanSetProfileCustomUserData(
+          _In_       HANDLE     hClientHandle,
+          _In_       const GUID *pInterfaceGuid,
+          _In_       LPCWSTR    strProfileName,
+          _In_       DWORD      dwDataSize,
+          _In_       const PBYTE pData,
+          _Reserved_ PVOID      pReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanSetProfileCustomUserData
+    func_ref.argtypes = [HANDLE, POINTER(GUID), LPCWSTR, DWORD, c_void_p, c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle, byref(pInterfaceGuid), strProfileName, dwDataSize, pData, None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanSetProfileCustomUserData failed for {strProfileName}", result)
+    return result
+
+
+WLAN_HOSTED_NETWORK_STATE = c_int
+WLAN_HOSTED_NETWORK_STATE_DICT = {
+    0: "wlan_hosted_network_unavailable",
+    1: "wlan_hosted_network_idle",
+    2: "wlan_hosted_network_active"
+}
+
+
+WLAN_HOSTED_NETWORK_OPCODE = c_int
+WLAN_HOSTED_NETWORK_OPCODE_DICT = {
+    0: "wlan_hosted_network_opcode_connection_settings",
+    1: "wlan_hosted_network_opcode_security_settings",
+    2: "wlan_hosted_network_opcode_station_profile",
+    3: "wlan_hosted_network_opcode_enable"
+}
+
+
+WLAN_HOSTED_NETWORK_REASON = c_int
+WLAN_HOSTED_NETWORK_REASON_DICT = {
+    0: "wlan_hosted_network_reason_success",
+    1: "wlan_hosted_network_reason_failure",
+    2: "wlan_hosted_network_reason_bad_parameters",
+    3: "wlan_hosted_network_reason_service_shutting_down",
+    4: "wlan_hosted_network_reason_insufficient_resources",
+    5: "wlan_hosted_network_reason_elevation_required",
+    6: "wlan_hosted_network_reason_read_only",
+    7: "wlan_hosted_network_reason_persistence_failed",
+    8: "wlan_hosted_network_reason_crypt_error",
+    9: "wlan_hosted_network_reason_impersonation_failed",
+    10: "wlan_hosted_network_reason_stop_before_start",
+    11: "wlan_hosted_network_reason_interface_available",
+    12: "wlan_hosted_network_reason_interface_unavailable",
+    13: "wlan_hosted_network_reason_miniport_stopped",
+    14: "wlan_hosted_network_reason_miniport_started",
+    15: "wlan_hosted_network_reason_incompatible_connection_started",
+    16: "wlan_hosted_network_reason_incompatible_connection_stopped",
+    17: "wlan_hosted_network_reason_user_if_not_allowed",
+    18: "wlan_hosted_network_reason_not_allowed",
+    19: "wlan_hosted_network_reason_kernel_mode_driver_no_ui",
+    20: "wlan_hosted_network_reason_miniport_internal_error",
+    21: "wlan_hosted_network_reason_if_operator_not_allowed",
+    22: "wlan_hosted_network_reason_already_started",
+}
+
+
+class WLAN_HOSTED_NETWORK_CONNECTION_SETTINGS(Structure):
+    """
+        typedef struct _WLAN_HOSTED_NETWORK_CONNECTION_SETTINGS {
+          DOT11_SSID hostedNetworkSSID;
+          DWORD      dwMaxNumberOfPeers;
+        } WLAN_HOSTED_NETWORK_CONNECTION_SETTINGS, *PWLAN_HOSTED_NETWORK_CONNECTION_SETTINGS;
+    """
+    _fields_ = [("hostedNetworkSSID", DOT11_SSID),
+                ("dwMaxNumberOfPeers", DWORD)]
+
+
+class WLAN_HOSTED_NETWORK_SECURITY_SETTINGS(Structure):
+    """
+        typedef struct _WLAN_HOSTED_NETWORK_SECURITY_SETTINGS {
+          DOT11_AUTH_ALGORITHM   dot11AuthAlgorithm;
+          DOT11_CIPHER_ALGORITHM dot11CipherAlgorithm;
+        } WLAN_HOSTED_NETWORK_SECURITY_SETTINGS, *PWLAN_HOSTED_NETWORK_SECURITY_SETTINGS;
+    """
+    _fields_ = [("dot11AuthAlgorithm", DOT11_AUTH_ALGORITHM_TYPE),
+                ("dot11CipherAlgorithm", DOT11_CIPHER_ALGORITHM_TYPE)]
+
+
+class WLAN_HOSTED_NETWORK_PEER_STATE(Structure):
+    """
+        typedef struct _WLAN_HOSTED_NETWORK_PEER_STATE {
+          DOT11_MAC_ADDRESS PeerMacAddress;
+          WLAN_HOSTED_NETWORK_PEER_AUTH_STATE PeerAuthState;
+        } WLAN_HOSTED_NETWORK_PEER_STATE, *PWLAN_HOSTED_NETWORK_PEER_STATE;
+    """
+    _fields_ = [("PeerMacAddress", DOT11_MAC_ADDRESS),
+                ("PeerAuthState", c_int)]
+
+
+class WLAN_HOSTED_NETWORK_STATUS(Structure):
+    """
+        typedef struct _WLAN_HOSTED_NETWORK_STATUS {
+          WLAN_HOSTED_NETWORK_STATE      HostedNetworkState;
+          GUID                           IPDeviceID;
+          DOT11_MAC_ADDRESS              wlanHostedNetworkBSSID;
+          DOT11_PHY_TYPE                 dot11PhyType;
+          ULONG                          ulChannelFrequency;
+          DWORD                          dwNumberOfPeers;
+          WLAN_HOSTED_NETWORK_PEER_STATE PeerList[1];
+        } WLAN_HOSTED_NETWORK_STATUS, *PWLAN_HOSTED_NETWORK_STATUS;
+    """
+    _fields_ = [("HostedNetworkState", WLAN_HOSTED_NETWORK_STATE),
+                ("IPDeviceID", GUID),
+                ("wlanHostedNetworkBSSID", DOT11_MAC_ADDRESS),
+                ("dot11PhyType", DOT11_PHY_TYPE),
+                ("ulChannelFrequency", c_ulong),
+                ("dwNumberOfPeers", DWORD),
+                ("PeerList", WLAN_HOSTED_NETWORK_PEER_STATE * 1)]
+
+
+def WlanHostedNetworkForceStart(hClientHandle: HANDLE) -> int:
+    """
+        DWORD WINAPI WlanHostedNetworkForceStart(
+          _In_       HANDLE                      hClientHandle,
+          _Out_opt_  PWLAN_HOSTED_NETWORK_REASON pFailReason,
+          _Reserved_ PVOID                       pvReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanHostedNetworkForceStart
+    func_ref.argtypes = [HANDLE, POINTER(WLAN_HOSTED_NETWORK_REASON), c_void_p]
+    func_ref.restype = DWORD
+    fail_reason = WLAN_HOSTED_NETWORK_REASON()
+    result = func_ref(hClientHandle, byref(fail_reason), None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanHostedNetworkForceStart failed (Reason: {fail_reason.value})", result)
+    return result
+
+
+def WlanHostedNetworkForceStop(hClientHandle: HANDLE) -> int:
+    """
+        DWORD WINAPI WlanHostedNetworkForceStop(
+          _In_       HANDLE                      hClientHandle,
+          _Out_opt_  PWLAN_HOSTED_NETWORK_REASON pFailReason,
+          _Reserved_ PVOID                       pvReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanHostedNetworkForceStop
+    func_ref.argtypes = [HANDLE, POINTER(WLAN_HOSTED_NETWORK_REASON), c_void_p]
+    func_ref.restype = DWORD
+    fail_reason = WLAN_HOSTED_NETWORK_REASON()
+    result = func_ref(hClientHandle, byref(fail_reason), None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanHostedNetworkForceStop failed (Reason: {fail_reason.value})", result)
+    return result
+
+
+def WlanHostedNetworkInitSettings(hClientHandle: HANDLE) -> int:
+    """
+        DWORD WINAPI WlanHostedNetworkInitSettings(
+          _In_       HANDLE                      hClientHandle,
+          _Out_opt_  PWLAN_HOSTED_NETWORK_REASON pFailReason,
+          _Reserved_ PVOID                       pvReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanHostedNetworkInitSettings
+    func_ref.argtypes = [HANDLE, POINTER(WLAN_HOSTED_NETWORK_REASON), c_void_p]
+    func_ref.restype = DWORD
+    fail_reason = WLAN_HOSTED_NETWORK_REASON()
+    result = func_ref(hClientHandle, byref(fail_reason), None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanHostedNetworkInitSettings failed (Reason: {fail_reason.value})", result)
+    return result
+
+
+def WlanHostedNetworkQueryProperty(hClientHandle: HANDLE, OpCode: WLAN_HOSTED_NETWORK_OPCODE) -> Tuple[int, c_void_p, WLAN_OPCODE_VALUE_TYPE]:
+    """
+        DWORD WINAPI WlanHostedNetworkQueryProperty(
+          _In_       HANDLE                     hClientHandle,
+          _In_       WLAN_HOSTED_NETWORK_OPCODE OpCode,
+          _Out_      PDWORD                     pdwDataSize,
+          _Out_      PVOID                      *ppvData,
+          _Out_      PWLAN_OPCODE_VALUE_TYPE    pwlanOpcodeValueType,
+          _Reserved_ PVOID                      pvReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanHostedNetworkQueryProperty
+    func_ref.argtypes = [HANDLE, WLAN_HOSTED_NETWORK_OPCODE, POINTER(DWORD), POINTER(c_void_p), POINTER(WLAN_OPCODE_VALUE_TYPE), c_void_p]
+    func_ref.restype = DWORD
+    dwDataSize = DWORD()
+    ppvData = c_void_p()
+    pwlanOpcodeValueType = WLAN_OPCODE_VALUE_TYPE()
+    result = func_ref(hClientHandle, OpCode, byref(dwDataSize), byref(ppvData), byref(pwlanOpcodeValueType), None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanHostedNetworkQueryProperty failed", result)
+    return dwDataSize.value, ppvData, pwlanOpcodeValueType
+
+
+def WlanHostedNetworkQuerySecondaryKey(hClientHandle: HANDLE) -> Tuple[int, c_char_p, bool, bool]:
+    """
+        DWORD WINAPI WlanHostedNetworkQuerySecondaryKey(
+          _In_       HANDLE                      hClientHandle,
+          _Out_      PDWORD                      pdwKeyLength,
+          _Out_      PUCHAR                      *ppucKeyData,
+          _Out_      PBOOL                       pbIsPassphrase,
+          _Out_      PBOOL                       pbIsPersistent,
+          _Out_opt_  PWLAN_HOSTED_NETWORK_REASON pFailReason,
+          _Reserved_ PVOID                       pvReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanHostedNetworkQuerySecondaryKey
+    func_ref.argtypes = [HANDLE, POINTER(DWORD), POINTER(c_char_p), POINTER(BOOL), POINTER(BOOL), POINTER(WLAN_HOSTED_NETWORK_REASON), c_void_p]
+    func_ref.restype = DWORD
+    dwKeyLength = DWORD()
+    ppucKeyData = c_char_p()
+    pbIsPassphrase = BOOL()
+    pbIsPersistent = BOOL()
+    fail_reason = WLAN_HOSTED_NETWORK_REASON()
+    result = func_ref(hClientHandle, byref(dwKeyLength), byref(ppucKeyData), byref(pbIsPassphrase), byref(pbIsPersistent), byref(fail_reason), None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanHostedNetworkQuerySecondaryKey failed (Reason: {fail_reason.value})", result)
+    return dwKeyLength.value, ppucKeyData, bool(pbIsPassphrase.value), bool(pbIsPersistent.value)
+
+
+def WlanHostedNetworkQueryStatus(hClientHandle: HANDLE) -> POINTER(WLAN_HOSTED_NETWORK_STATUS):
+    """
+        DWORD WINAPI WlanHostedNetworkQueryStatus(
+          _In_       HANDLE                      hClientHandle,
+          _Out_      PWLAN_HOSTED_NETWORK_STATUS *ppWlanHostedNetworkStatus,
+          _Reserved_ PVOID                       pvReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanHostedNetworkQueryStatus
+    func_ref.argtypes = [HANDLE, POINTER(POINTER(WLAN_HOSTED_NETWORK_STATUS)), c_void_p]
+    func_ref.restype = DWORD
+    ppStatus = pointer(WLAN_HOSTED_NETWORK_STATUS())
+    result = func_ref(hClientHandle, byref(ppStatus), None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanHostedNetworkQueryStatus failed", result)
+    return ppStatus
+
+
+def WlanHostedNetworkRefreshSecuritySettings(hClientHandle: HANDLE) -> int:
+    """
+        DWORD WINAPI WlanHostedNetworkRefreshSecuritySettings(
+          _In_       HANDLE                      hClientHandle,
+          _Out_opt_  PWLAN_HOSTED_NETWORK_REASON pFailReason,
+          _Reserved_ PVOID                       pvReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanHostedNetworkRefreshSecuritySettings
+    func_ref.argtypes = [HANDLE, POINTER(WLAN_HOSTED_NETWORK_REASON), c_void_p]
+    func_ref.restype = DWORD
+    fail_reason = WLAN_HOSTED_NETWORK_REASON()
+    result = func_ref(hClientHandle, byref(fail_reason), None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanHostedNetworkRefreshSecuritySettings failed (Reason: {fail_reason.value})", result)
+    return result
+
+
+def WlanHostedNetworkSetProperty(hClientHandle: HANDLE, OpCode: WLAN_HOSTED_NETWORK_OPCODE, dwDataSize: int, pvData: c_void_p) -> int:
+    """
+        DWORD WINAPI WlanHostedNetworkSetProperty(
+          _In_       HANDLE                     hClientHandle,
+          _In_       WLAN_HOSTED_NETWORK_OPCODE OpCode,
+          _In_       DWORD                      dwDataSize,
+          _In_       PVOID                      pvData,
+          _Out_opt_  PWLAN_HOSTED_NETWORK_REASON pFailReason,
+          _Reserved_ PVOID                      pvReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanHostedNetworkSetProperty
+    func_ref.argtypes = [HANDLE, WLAN_HOSTED_NETWORK_OPCODE, DWORD, c_void_p, POINTER(WLAN_HOSTED_NETWORK_REASON), c_void_p]
+    func_ref.restype = DWORD
+    fail_reason = WLAN_HOSTED_NETWORK_REASON()
+    result = func_ref(hClientHandle, OpCode, dwDataSize, pvData, byref(fail_reason), None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanHostedNetworkSetProperty failed (Reason: {fail_reason.value})", result)
+    return result
+
+
+def WlanHostedNetworkSetSecondaryKey(hClientHandle: HANDLE, dwKeyLength: int, pucKeyData: bytes, bIsPassphrase: bool, bIsPersistent: bool) -> int:
+    """
+        DWORD WINAPI WlanHostedNetworkSetSecondaryKey(
+          _In_       HANDLE                      hClientHandle,
+          _In_       DWORD                       dwKeyLength,
+          _In_       PUCHAR                      pucKeyData,
+          _In_       BOOL                        bIsPassphrase,
+          _In_       BOOL                        bIsPersistent,
+          _Out_opt_  PWLAN_HOSTED_NETWORK_REASON pFailReason,
+          _Reserved_ PVOID                       pvReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanHostedNetworkSetSecondaryKey
+    func_ref.argtypes = [HANDLE, DWORD, c_char_p, BOOL, BOOL, POINTER(WLAN_HOSTED_NETWORK_REASON), c_void_p]
+    func_ref.restype = DWORD
+    fail_reason = WLAN_HOSTED_NETWORK_REASON()
+    result = func_ref(hClientHandle, dwKeyLength, pucKeyData, bIsPassphrase, bIsPersistent, byref(fail_reason), None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanHostedNetworkSetSecondaryKey failed (Reason: {fail_reason.value})", result)
+    return result
+
+
+def WlanHostedNetworkStartUsing(hClientHandle: HANDLE) -> int:
+    """
+        DWORD WINAPI WlanHostedNetworkStartUsing(
+          _In_       HANDLE                      hClientHandle,
+          _Out_opt_  PWLAN_HOSTED_NETWORK_REASON pFailReason,
+          _Reserved_ PVOID                       pvReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanHostedNetworkStartUsing
+    func_ref.argtypes = [HANDLE, POINTER(WLAN_HOSTED_NETWORK_REASON), c_void_p]
+    func_ref.restype = DWORD
+    fail_reason = WLAN_HOSTED_NETWORK_REASON()
+    result = func_ref(hClientHandle, byref(fail_reason), None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanHostedNetworkStartUsing failed (Reason: {fail_reason.value})", result)
+    return result
+
+
+def WlanHostedNetworkStopUsing(hClientHandle: HANDLE) -> int:
+    """
+        DWORD WINAPI WlanHostedNetworkStopUsing(
+          _In_       HANDLE                      hClientHandle,
+          _Out_opt_  PWLAN_HOSTED_NETWORK_REASON pFailReason,
+          _Reserved_ PVOID                       pvReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanHostedNetworkStopUsing
+    func_ref.argtypes = [HANDLE, POINTER(WLAN_HOSTED_NETWORK_REASON), c_void_p]
+    func_ref.restype = DWORD
+    fail_reason = WLAN_HOSTED_NETWORK_REASON()
+    result = func_ref(hClientHandle, byref(fail_reason), None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError(f"WlanHostedNetworkStopUsing failed (Reason: {fail_reason.value})", result)
+    return result
+
+
+class WLAN_RAW_DATA_LIST(Structure):
+    """
+        typedef struct _WLAN_RAW_DATA_LIST {
+          DWORD         dwTotalSize;
+          DWORD         dwNumberOfItems;
+          WLAN_RAW_DATA RawData[1];
+        } WLAN_RAW_DATA_LIST, *PWLAN_RAW_DATA_LIST;
+    """
+    _fields_ = [("dwTotalSize", DWORD),
+                ("dwNumberOfItems", DWORD),
+                ("RawData", WLAN_RAW_DATA * 1)]
+
+
+def WlanExtractPsdIEDataList(hClientHandle: HANDLE, dwIeDataSize: int, pRawIeData: c_void_p, strFormat: str) -> POINTER(WLAN_RAW_DATA_LIST):
+    """
+        DWORD WINAPI WlanExtractPsdIEDataList(
+          _In_            HANDLE           hClientHandle,
+          _In_            DWORD            dwIeDataSize,
+          _In_            const PBYTE      pRawIeData,
+          _In_            LPCWSTR          strFormat,
+          _Reserved_      PVOID            pReserved,
+          _Out_           PWLAN_RAW_DATA_LIST *ppPsdIEDataList
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanExtractPsdIEDataList
+    func_ref.argtypes = [HANDLE, DWORD, c_void_p, LPCWSTR, c_void_p, POINTER(POINTER(WLAN_RAW_DATA_LIST))]
+    func_ref.restype = DWORD
+    ppList = pointer(WLAN_RAW_DATA_LIST())
+    result = func_ref(hClientHandle, dwIeDataSize, pRawIeData, strFormat, None, byref(ppList))
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanExtractPsdIEDataList failed", result)
+    return ppList
+
+
+def WlanSetPsdIeDataList(hClientHandle: HANDLE, strFormat: Optional[str], pPsdIEDataList: Optional[WLAN_RAW_DATA_LIST]) -> int:
+    """
+        DWORD WINAPI WlanSetPsdIeDataList(
+          _In_            HANDLE           hClientHandle,
+          _In_opt_        LPCWSTR          strFormat,
+          _In_opt_        const PWLAN_RAW_DATA_LIST pPsdIEDataList,
+          _Reserved_      PVOID            pReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanSetPsdIeDataList
+    func_ref.argtypes = [HANDLE, LPCWSTR, POINTER(WLAN_RAW_DATA_LIST), c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle, strFormat, pPsdIEDataList, None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanSetPsdIeDataList failed", result)
+    return result
+
+
+WLAN_IHV_CONTROL_TYPE = c_int
+WLAN_IHV_CONTROL_TYPE_DICT = {
+    0: "wlan_ihv_control_type_service",
+    1: "wlan_ihv_control_type_driver"
+}
+
+
+def WlanIhvControl(hClientHandle: HANDLE, pInterfaceGuid: GUID, Type: WLAN_IHV_CONTROL_TYPE, dwInBufferSize: int, pvInBuffer: c_void_p, dwOutBufferSize: int) -> Tuple[int, c_void_p, int]:
+    """
+        DWORD WINAPI WlanIhvControl(
+          _In_            HANDLE                hClientHandle,
+          _In_            const GUID            *pInterfaceGuid,
+          _In_            WLAN_IHV_CONTROL_TYPE Type,
+          _In_            DWORD                 dwInBufferSize,
+          _In_            PVOID                 pvInBuffer,
+          _In_            DWORD                 dwOutBufferSize,
+          _Out_opt_       PVOID                 pvOutBuffer,
+          _Out_           PDWORD                pdwBytesReturned
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanIhvControl
+    func_ref.argtypes = [HANDLE, POINTER(GUID), WLAN_IHV_CONTROL_TYPE, DWORD, c_void_p, DWORD, c_void_p, POINTER(DWORD)]
+    func_ref.restype = DWORD
+    pvOutBuffer = create_string_buffer(dwOutBufferSize) if dwOutBufferSize > 0 else None
+    dwBytesReturned = DWORD()
+    result = func_ref(hClientHandle, byref(pInterfaceGuid), Type, dwInBufferSize, pvInBuffer, dwOutBufferSize, pvOutBuffer, byref(dwBytesReturned))
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanIhvControl failed", result)
+    return result, pvOutBuffer, dwBytesReturned.value
+
+
+def WlanDeviceServiceCommand(hClientHandle: HANDLE, pInterfaceGuid: GUID, pDeviceServiceGuid: GUID, dwOpCode: int, dwInBufferSize: int, pvInBuffer: c_void_p, dwOutBufferSize: int) -> Tuple[int, c_void_p, int]:
+    """
+        DWORD WINAPI WlanDeviceServiceCommand(
+          _In_            HANDLE     hClientHandle,
+          _In_            const GUID *pInterfaceGuid,
+          _In_            LPCGUID    pDeviceServiceGuid,
+          _In_            DWORD      dwOpCode,
+          _In_            DWORD      dwInBufferSize,
+          _In_            PVOID      pvInBuffer,
+          _In_            DWORD      dwOutBufferSize,
+          _Out_opt_       PVOID      pvOutBuffer,
+          _Out_           PDWORD     pdwBytesReturned
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanDeviceServiceCommand
+    func_ref.argtypes = [HANDLE, POINTER(GUID), POINTER(GUID), DWORD, DWORD, c_void_p, DWORD, c_void_p, POINTER(DWORD)]
+    func_ref.restype = DWORD
+    pvOutBuffer = create_string_buffer(dwOutBufferSize) if dwOutBufferSize > 0 else None
+    dwBytesReturned = DWORD()
+    result = func_ref(hClientHandle, byref(pInterfaceGuid), byref(pDeviceServiceGuid), dwOpCode, dwInBufferSize, pvInBuffer, dwOutBufferSize, pvOutBuffer, byref(dwBytesReturned))
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanDeviceServiceCommand failed", result)
+    return result, pvOutBuffer, dwBytesReturned.value
+
+
+class WLAN_DEVICE_SERVICE_GUID_LIST(Structure):
+    """
+        typedef struct _WLAN_DEVICE_SERVICE_GUID_LIST {
+          DWORD dwNumberOfItems;
+          DWORD dwIndex;
+          GUID  DeviceServiceGuids[1];
+        } WLAN_DEVICE_SERVICE_GUID_LIST, *PWLAN_DEVICE_SERVICE_GUID_LIST;
+    """
+    _fields_ = [("dwNumberOfItems", DWORD),
+                ("dwIndex", DWORD),
+                ("DeviceServiceGuids", GUID * 1)]
+
+
+def WlanGetSupportedDeviceServices(hClientHandle: HANDLE, pInterfaceGuid: GUID) -> POINTER(WLAN_DEVICE_SERVICE_GUID_LIST):
+    """
+        DWORD WINAPI WlanGetSupportedDeviceServices(
+          _In_  HANDLE                      hClientHandle,
+          _In_  const GUID                  *pInterfaceGuid,
+          _Out) PWLAN_DEVICE_SERVICE_GUID_LIST *ppSupportedDeviceServiceGuidList
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanGetSupportedDeviceServices
+    func_ref.argtypes = [HANDLE, POINTER(GUID), POINTER(POINTER(WLAN_DEVICE_SERVICE_GUID_LIST))]
+    func_ref.restype = DWORD
+    ppList = pointer(WLAN_DEVICE_SERVICE_GUID_LIST())
+    result = func_ref(hClientHandle, byref(pInterfaceGuid), byref(ppList))
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanGetSupportedDeviceServices failed", result)
+    return ppList
+
+
+def WlanRegisterVirtualStationNotification(hClientHandle: HANDLE, bRegister: bool) -> int:
+    """
+        DWORD WINAPI WlanRegisterVirtualStationNotification(
+          _In_ HANDLE hClientHandle,
+          _In_ BOOL   bRegister,
+               PVOID  pReserved
+        );
+    """
+    _check_wlanapi()
+    func_ref = wlanapi.WlanRegisterVirtualStationNotification
+    func_ref.argtypes = [HANDLE, BOOL, c_void_p]
+    func_ref.restype = DWORD
+    result = func_ref(hClientHandle, bRegister, None)
+    if result != ERROR_SUCCESS:
+        raise Win32WifiError("WlanRegisterVirtualStationNotification failed", result)
+    return result
+
+
 def WlanRenameProfile(hClientHandle: HANDLE, pInterfaceGuid: GUID, strOldProfileName: str, strNewProfileName: str) -> int:
     """
         DWORD WINAPI WlanRenameProfile(

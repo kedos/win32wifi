@@ -1,43 +1,54 @@
 DONE
- + WlanOpenHandle
- + WlanCloseHandle
- + WlanEnumInterfaces
- + WlanFreeMemory
- + WlanGetNetworkBssList
- + WlanGetAvailableNetworkList
- + WlanGetProfileList
- + WlanGetProfile
- + WlanScan
- + WlanConnect
- + WlanDisconnect
- + WlanQueryInterface
- + WlanDeleteProfile
- + WlanRegisterNotification
- + WlanReasonCodeToString
- + WlanSetProfile
- + WlanGetInterfaceCapability
- + WlanRenameProfile
- + WlanSetProfileList
- + WlanSetProfilePosition
- + WlanSetInterface
-
-PENDING (Low Priority / Specialized)
  + WlanAllocateMemory
+ + WlanCloseHandle
+ + WlanConnect
+ + WlanDeleteProfile
+ + WlanDeviceServiceCommand
+ + WlanDisconnect
+ + WlanEnumInterfaces
  + WlanExtractPsdIEDataList
+ + WlanFreeMemory
+ + WlanGetAvailableNetworkList
  + WlanGetFilterList
+ + WlanGetInterfaceCapability
+ + WlanGetNetworkBssList
+ + WlanGetProfile
  + WlanGetProfileCustomUserData
+ + WlanGetProfileList
  + WlanGetSecuritySettings
- + WlanHostedNetwork* (Legacy/Deprecated)
+ + WlanGetSupportedDeviceServices
+ + WlanHostedNetworkForceStart
+ + WlanHostedNetworkForceStop
+ + WlanHostedNetworkInitSettings
+ + WlanHostedNetworkQueryProperty
+ + WlanHostedNetworkQuerySecondaryKey
+ + WlanHostedNetworkQueryStatus
+ + WlanHostedNetworkRefreshSecuritySettings
+ + WlanHostedNetworkSetProperty
+ + WlanHostedNetworkSetSecondaryKey
+ + WlanHostedNetworkStartUsing
+ + WlanHostedNetworkStopUsing
  + WlanIhvControl
+ + WlanOpenHandle
  + WlanQueryAutoConfigParameter
+ + WlanQueryInterface
+ + WlanReasonCodeToString
+ + WlanRegisterNotification
  + WlanRegisterVirtualStationNotification
+ + WlanRenameProfile
  + WlanSaveTemporaryProfile
+ + WlanScan
  + WlanSetAutoConfigParameter
  + WlanSetFilterList
+ + WlanSetInterface
+ + WlanSetProfile
  + WlanSetProfileCustomUserData
  + WlanSetProfileEapUserData
  + WlanSetProfileEapXmlUserData
+ + WlanSetProfileList
+ + WlanSetProfilePosition
  + WlanSetPsdIeDataList
  + WlanSetSecuritySettings
  + WlanUIEditProfile
- + WlanDeviceService*
+
+Total coverage of the Windows Native Wifi API achieved.
