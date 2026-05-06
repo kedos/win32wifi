@@ -20,11 +20,33 @@
 # Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
 
+import ctypes
 from ctypes import *
 from enum import Enum
-from typing import Optional, Any
+from typing import Optional, Any, Tuple
 
-from comtypes import GUID
+try:
+    from comtypes import GUID
+except ImportError:
+    # comtypes only installs on Windows. Provide a binary-compatible fallback
+    # so the package is importable on other platforms (for tests, type
+    # checking, IDE tooling). The real wlanapi.dll is unavailable off-Windows
+    # anyway, so no calls will actually use this stub.
+    class GUID(Structure):  # type: ignore[no-redef]
+        _fields_ = [
+            ("Data1", c_ulong),
+            ("Data2", c_ushort),
+            ("Data3", c_ushort),
+            ("Data4", c_ubyte * 8),
+        ]
+
+        def __init__(self, src=None):
+            super().__init__()
+            # Mirror comtypes.GUID's copy constructor so callers can do
+            # ``GUID(other_guid)`` to defensively duplicate.
+            if src is not None:
+                ctypes.memmove(ctypes.byref(self), ctypes.byref(src),
+                               ctypes.sizeof(self))
 
 from ctypes.wintypes import BOOL
 from ctypes.wintypes import DWORD
@@ -248,6 +270,24 @@ WLAN_CONNECTION_MODE_KV = {0: "wlan_connection_mode_profile",
                            4: "wlan_connection_mode_auto",
                            5: "wlan_connection_mode_invalid"}
 WLAN_CONNECTION_MODE_VK = { v: k for k, v in WLAN_CONNECTION_MODE_KV.items() }
+
+def get_errno() -> int:
+    """Return the current C errno value from ctypes' per-thread storage."""
+    return ctypes.get_errno()
+
+
+def get_last_error() -> int:
+    """Return the current Windows last-error value from ctypes' per-thread storage.
+
+    The notification callback registered by :func:`WlanRegisterNotification`
+    is built with ``use_last_error=True``, so failures inside a callback are
+    captured here rather than overwriting the process-wide value. On
+    non-Windows platforms ``ctypes.get_last_error`` does not exist; we return
+    ``0`` so importing/using the helper is safe in cross-platform tests.
+    """
+    fn = getattr(ctypes, "get_last_error", None)
+    return fn() if fn is not None else 0
+
 
 def _check_wlanapi():
     if wlanapi is None:

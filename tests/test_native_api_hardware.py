@@ -20,14 +20,16 @@
 # Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
 
-import sys
-import os
+"""Integration tests against a real ``wlanapi.dll`` on Windows.
+
+Skipped by default. Run with ``pytest -m hardware`` on a Windows host that
+has at least one wireless adapter present.
+"""
 import unittest
 import threading
 from ctypes import addressof
 
-# Add parent directory to sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import pytest
 
 from win32wifi.Win32NativeWifiApi import (
     WlanOpenHandle, WlanCloseHandle, WlanEnumInterfaces, WlanFreeMemory,
@@ -36,6 +38,8 @@ from win32wifi.Win32NativeWifiApi import (
     ERROR_SUCCESS
 )
 
+
+@pytest.mark.hardware
 class TestWin32NativeWifiApi(unittest.TestCase):
 
     def test_wlan_open_close_handle_success(self):

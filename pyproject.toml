@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "win32wifi"
-version = "0.2.0"
+version = "0.3.0"
 description = "Python Windows Wifi - bindings for the Windows Native Wifi API"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -27,12 +27,27 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "comtypes",
+    "comtypes; platform_system == 'Windows'",
     "xmltodict",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7",
+    "pytest-cov>=4",
 ]
 
 [project.urls]
 Homepage = "https://github.com/almondg/win32wifi"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Hardware tests need a real Windows box with a wifi adapter; skip them by
+# default. Opt in with: pytest -m "hardware" or pytest -m "not hardware or hardware".
+addopts = "-m 'not hardware'"
+markers = [
+    "hardware: tests that require a real Windows host with a wireless adapter",
+]
 
 [tool.setuptools]
 packages = ["win32wifi"]

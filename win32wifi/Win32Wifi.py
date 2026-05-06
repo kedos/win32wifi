@@ -20,16 +20,21 @@
 # Author: Shaked Gitelman   (almondg)   <shaked.dev@gmail.com>
 #
 
-from ctypes import *
-from datetime import datetime
-from enum import Enum
 import functools
-import time
-from typing import List, Dict, Optional, Any, Tuple
+import logging
+import threading
+import warnings
+from ctypes import *
+from typing import Any, Dict, List, Optional, Tuple
+
 import xmltodict
 
-from comtypes import GUID
 from win32wifi.Win32NativeWifiApi import *
+# Reuse whichever GUID the low-level module ended up with (real comtypes on
+# Windows, ctypes fallback elsewhere) so both layers agree on the type.
+from win32wifi.Win32NativeWifiApi import GUID
+
+logger = logging.getLogger(__name__)
 
 NULL = None
 
@@ -167,7 +172,9 @@ class WirelessProfile:
         try:
             d = xmltodict.parse(xml)
             self.ssid = d['WLANProfile']['SSIDConfig']['SSID']['name']
-        except Exception:
+        except (xmltodict.expat.ExpatError, KeyError, TypeError) as e:
+            logger.debug("WirelessProfile %r: failed to extract SSID from XML: %s",
+                         self.name, e)
             self.ssid = None
 
     def __str__(self) -> str:
@@ -588,22 +595,43 @@ def setProfileList(wireless_interface: WirelessInterface, profile_names: List[st
         result = WlanSetProfileList(handle, wireless_interface.guid, num_items, names_array)
     return result
 
+_HOSTED_NETWORK_DEPRECATION_MSG = (
+    "Wlan Hosted Network APIs were removed by Microsoft in Windows 10 "
+    "version 2004 and later. They will fail at runtime on modern Windows. "
+    "Use the Mobile Hotspot APIs "
+    "(Windows.Networking.NetworkOperators.NetworkOperatorTetheringManager) "
+    "via WinRT instead. This wrapper will be removed in a future release."
+)
+
+
+def _warn_hosted_network_deprecated() -> None:
+    warnings.warn(
+        _HOSTED_NETWORK_DEPRECATION_MSG,
+        DeprecationWarning,
+        stacklevel=3,
+    )
+
+
 def hostedNetworkForceStart() -> int:
+    _warn_hosted_network_deprecated()
     with WlanHandle() as handle:
         result = WlanHostedNetworkForceStart(handle)
     return result
 
 def hostedNetworkForceStop() -> int:
+    _warn_hosted_network_deprecated()
     with WlanHandle() as handle:
         result = WlanHostedNetworkForceStop(handle)
     return result
 
 def hostedNetworkInitSettings() -> int:
+    _warn_hosted_network_deprecated()
     with WlanHandle() as handle:
         result = WlanHostedNetworkInitSettings(handle)
     return result
 
 def hostedNetworkQueryProperty(opcode: str) -> Any:
+    _warn_hosted_network_deprecated()
     opcode_val = None
     for k, v in WLAN_HOSTED_NETWORK_OPCODE_DICT.items():
         if v == opcode:
@@ -627,6 +655,7 @@ def hostedNetworkQueryProperty(opcode: str) -> Any:
             WlanFreeMemory(p_data)
 
 def hostedNetworkQuerySecondaryKey() -> Dict[str, Any]:
+    _warn_hosted_network_deprecated()
     with WlanHandle() as handle:
         size, p_key, is_pass, is_pers = WlanHostedNetworkQuerySecondaryKey(handle)
         try:
@@ -639,6 +668,7 @@ def hostedNetworkQuerySecondaryKey() -> Dict[str, Any]:
             WlanFreeMemory(p_key)
 
 def hostedNetworkQueryStatus() -> HostedNetworkStatus:
+    _warn_hosted_network_deprecated()
     with WlanHandle() as handle:
         status_ptr = WlanHostedNetworkQueryStatus(handle)
         try:
@@ -647,11 +677,13 @@ def hostedNetworkQueryStatus() -> HostedNetworkStatus:
             WlanFreeMemory(status_ptr)
 
 def hostedNetworkRefreshSecuritySettings() -> int:
+    _warn_hosted_network_deprecated()
     with WlanHandle() as handle:
         result = WlanHostedNetworkRefreshSecuritySettings(handle)
     return result
 
 def hostedNetworkSetProperty(opcode: str, data: Any) -> int:
+    _warn_hosted_network_deprecated()
     opcode_val = None
     for k, v in WLAN_HOSTED_NETWORK_OPCODE_DICT.items():
         if v == opcode:
@@ -675,6 +707,7 @@ def hostedNetworkSetProperty(opcode: str, data: Any) -> int:
     return result
 
 def hostedNetworkSetSecondaryKey(key: bytes, is_passphrase: bool = True, is_persistent: bool = True) -> int:
+    _warn_hosted_network_deprecated()
     key_len = len(key)
     p_key = cast(create_string_buffer(key, key_len), c_char_p)
     with WlanHandle() as handle:
@@ -682,11 +715,13 @@ def hostedNetworkSetSecondaryKey(key: bytes, is_passphrase: bool = True, is_pers
     return result
 
 def hostedNetworkStartUsing() -> int:
+    _warn_hosted_network_deprecated()
     with WlanHandle() as handle:
         result = WlanHostedNetworkStartUsing(handle)
     return result
 
 def hostedNetworkStopUsing() -> int:
+    _warn_hosted_network_deprecated()
     with WlanHandle() as handle:
         result = WlanHostedNetworkStopUsing(handle)
     return result
@@ -710,24 +745,19 @@ def extractPsdIEDataList(ie_data: bytes, str_format: str) -> List[bytes]:
             WlanFreeMemory(list_ptr)
 
 def setPsdIeDataList(str_format: Optional[str], data_list: List[bytes]) -> int:
-    num_items = len(data_list)
-    
-    class DYNAMIC_WLAN_RAW_DATA_LIST(Structure):
-        _fields_ = [("dwTotalSize", DWORD),
-                    ("dwNumberOfItems", DWORD),
-                    ("RawData", WLAN_RAW_DATA * num_items)]
-    
-    rdl = DYNAMIC_WLAN_RAW_DATA_LIST()
-    rdl.dwNumberOfItems = num_items
-    rdl.dwTotalSize = sizeof(DYNAMIC_WLAN_RAW_DATA_LIST) # Approximation
-    for i, data in enumerate(data_list):
-        # This is complex because WLAN_RAW_DATA has a 1-byte DataBlob.
-        # For simplicity in this comprehensive update, we'll implement a basic version.
-        pass # Full implementation of variable length RawData packing is very turn-intensive
+    """Not implemented.
 
-    with WlanHandle() as handle:
-        result = WlanSetPsdIeDataList(handle, str_format, None) # Placeholder
-    return result
+    Packing ``WLAN_RAW_DATA_LIST`` correctly requires a variable-length
+    structure where each ``WLAN_RAW_DATA`` entry's ``DataBlob`` is sized
+    per-item, plus careful alignment of the trailing payloads. The previous
+    implementation silently dropped ``data_list`` and called the DLL with
+    ``None`` — that produced wrong, undetectable results in production.
+    Raise loudly until a real implementation lands; pull requests welcome.
+    """
+    raise NotImplementedError(
+        "setPsdIeDataList is not implemented — variable-length WLAN_RAW_DATA "
+        "packing has no caller-tested implementation in this library yet."
+    )
 
 def ihvControl(wireless_interface: WirelessInterface, control_type: str, in_buffer: bytes, out_buffer_size: int = 0) -> Tuple[int, bytes, int]:
     ct_val = None
@@ -884,10 +914,81 @@ def connect(wireless_interface: WirelessInterface, connection_params: Dict[str, 
 def dot11bssidToString(dot11Bssid: DOT11_MAC_ADDRESS) -> str:
     return ":".join(f"{x:02X}" for x in dot11Bssid)
 
-def queryInterface(wireless_interface: WirelessInterface, opcode_item: str) -> Tuple[Any, Any]:
+def _decode_query_interface(opcode_item: str, r: Any) -> Any:
+    """Pull a Pythonic value out of the WlanQueryInterface output.
+
+    The native buffer is freed by the caller via WlanFreeMemory immediately
+    after this returns, so every decoder MUST copy primitives/strings into
+    plain Python objects — never return the ctypes object itself or a slice
+    that shares its memory.
     """
-    Queries various parameters of a specified interface.
-    opcode_item is a string like "interface_state" or "current_connection".
+    if opcode_item == "interface_state":
+        return WLAN_INTERFACE_STATE_DICT[r.value]
+
+    if opcode_item == "current_connection":
+        aa = r.wlanAssociationAttributes
+        sa = r.wlanSecurityAttributes
+        return {
+            "isState": WLAN_INTERFACE_STATE_DICT[r.isState],
+            "wlanConnectionMode": WLAN_CONNECTION_MODE_KV[r.wlanConnectionMode],
+            "strProfileName": str(r.strProfileName),
+            "wlanAssociationAttributes": {
+                "dot11Ssid": bytes(aa.dot11Ssid.SSID[:aa.dot11Ssid.SSIDLength]),
+                "dot11BssType": DOT11_BSS_TYPE_DICT_KV[aa.dot11BssType],
+                "dot11Bssid": dot11bssidToString(aa.dot11Bssid),
+                "dot11PhyType": DOT11_PHY_TYPE_DICT[aa.dot11PhyType],
+                "uDot11PhyIndex": int(aa.uDot11PhyIndex),
+                "wlanSignalQuality": int(aa.wlanSignalQuality),
+                "ulRxRate": int(aa.ulRxRate),
+                "ulTxRate": int(aa.ulTxRate),
+            },
+            "wlanSecurityAttributes": {
+                "bSecurityEnabled": bool(sa.bSecurityEnabled),
+                "bOneXEnabled": bool(sa.bOneXEnabled),
+                "dot11AuthAlgorithm": DOT11_AUTH_ALGORITHM_DICT[sa.dot11AuthAlgorithm],
+                "dot11CipherAlgorithm": DOT11_CIPHER_ALGORITHM_DICT[sa.dot11CipherAlgorithm],
+            },
+        }
+
+    if opcode_item == "radio_state":
+        phys = []
+        for i in range(int(r.dwNumberOfPhys)):
+            phy = r.PhyRadioState[i]
+            phys.append({
+                "dwPhyIndex": int(phy.dwPhyIndex),
+                "dot11SoftwareRadioState": DOT11_RADIO_STATE_DICT[phy.dot11SoftwareRadioState],
+                "dot11HardwareRadioState": DOT11_RADIO_STATE_DICT[phy.dot11HardwareRadioState],
+            })
+        return phys
+
+    if opcode_item == "bss_type":
+        return DOT11_BSS_TYPE_DICT_KV[r.value]
+
+    # Simple scalar opcodes — c_bool / c_long / c_ulong all expose `.value`.
+    if hasattr(r, "value"):
+        val = r.value
+        # c_bool surfaces 0/1 as int on some platforms; coerce for consistency.
+        if isinstance(val, int) and opcode_item in {
+            "autoconf_enabled",
+            "background_scan_enabled",
+            "media_streaming_mode",
+            "supported_safe_mode",
+            "certified_safe_mode",
+        }:
+            return bool(val)
+        return val
+
+    raise ValueError(f"No decoder for opcode item: {opcode_item}")
+
+
+def queryInterface(wireless_interface: WirelessInterface, opcode_item: str) -> Any:
+    """Query a single attribute of a wireless interface.
+
+    ``opcode_item`` is the suffix after ``wlan_intf_opcode_`` — e.g. ``rssi``,
+    ``channel_number``, ``interface_state``, ``current_connection``,
+    ``radio_state``. Returns a Pythonic value (``int``, ``bool``, ``str``,
+    ``dict``, or ``list``) — never a ctypes object that points into the
+    soon-to-be-freed native buffer.
     """
     opcode_item_ext = f"wlan_intf_opcode_{opcode_item}"
     opcode_val = None
@@ -895,51 +996,14 @@ def queryInterface(wireless_interface: WirelessInterface, opcode_item: str) -> T
         if val == opcode_item_ext:
             opcode_val = key
             break
-    
+
     if opcode_val is None:
         raise ValueError(f"Unknown opcode item: {opcode_item}")
 
     with WlanHandle() as handle:
         result_ptr = WlanQueryInterface(handle, wireless_interface.guid, WLAN_INTF_OPCODE(opcode_val))
         try:
-            r = result_ptr.contents
-            if opcode_item == "interface_state":
-                ext_out = WLAN_INTERFACE_STATE_DICT[r.value]
-            elif opcode_item == "current_connection":
-                isState = WLAN_INTERFACE_STATE_DICT[r.isState]
-                wlanConnectionMode = WLAN_CONNECTION_MODE_KV[r.wlanConnectionMode]
-                strProfileName = r.strProfileName
-                aa = r.wlanAssociationAttributes
-                wlanAssociationAttributes = {
-                    "dot11Ssid": aa.dot11Ssid.SSID[:aa.dot11Ssid.SSIDLength],
-                    "dot11BssType": DOT11_BSS_TYPE_DICT_KV[aa.dot11BssType],
-                    "dot11Bssid": dot11bssidToString(aa.dot11Bssid),
-                    "dot11PhyType": DOT11_PHY_TYPE_DICT[aa.dot11PhyType],
-                    "uDot11PhyIndex": aa.uDot11PhyIndex,
-                    "wlanSignalQuality": aa.wlanSignalQuality,
-                    "ulRxRate": aa.ulRxRate,
-                    "ulTxRate": aa.ulTxRate,
-                }
-                sa = r.wlanSecurityAttributes
-                wlanSecurityAttributes = {
-                    "bSecurityEnabled": bool(sa.bSecurityEnabled),
-                    "bOneXEnabled": bool(sa.bOneXEnabled),
-                    "dot11AuthAlgorithm": DOT11_AUTH_ALGORITHM_DICT[sa.dot11AuthAlgorithm],
-                    "dot11CipherAlgorithm": DOT11_CIPHER_ALGORITHM_DICT[sa.dot11CipherAlgorithm],
-                }
-                ext_out = {
-                    "isState": isState,
-                    "wlanConnectionMode": wlanConnectionMode,
-                    "strProfileName": strProfileName,
-                    "wlanAssociationAttributes": wlanAssociationAttributes,
-                    "wlanSecurityAttributes": wlanSecurityAttributes,
-                }
-            else:
-                ext_out = r.value if hasattr(r, 'value') else r
-            
-            # Create a copy of the data before freeing the memory
-            # For simplicity in this wrapper, we return the ext_out which is a plain Python dict/string/val
-            return None, ext_out # The raw 'r' is about to be freed, we should probably not return it.
+            return _decode_query_interface(opcode_item, result_ptr.contents)
         finally:
             WlanFreeMemory(result_ptr)
 
@@ -984,7 +1048,12 @@ class WlanEvent:
                                  code.name,
                                  actual.InterfaceGuid,
                                  data)
-            except Exception:
+            except (ValueError, KeyError) as e:
+                # ValueError → unknown NotificationCode for this source's enum;
+                # KeyError → unknown source/code in the lookup tables. Either
+                # is a stray notification we can safely drop.
+                logger.debug("Dropping unknown WLAN notification (source=%s code=%s): %s",
+                             actual.NotificationSource, actual.NotificationCode, e)
                 return None
         return None
 
@@ -1014,8 +1083,13 @@ def OnWlanNotification(callback, wlan_notification_data, context):
         callback(event, context)
 
 
-global_callbacks = []
-global_handles = []
+# Notification callbacks fire on Windows worker threads, so the bookkeeping
+# below must be serialized. ``_notif_lock`` guards both lists; the lists hold
+# strong references so the CFUNCTYPE trampolines stay alive until they're
+# explicitly torn down.
+_notif_lock = threading.Lock()
+_notif_handles: List[HANDLE] = []
+_notif_callbacks: List[Any] = []
 
 
 class NotificationObject:
@@ -1027,24 +1101,55 @@ class NotificationObject:
 def registerNotification(callback: Any, context: Any = None) -> NotificationObject:
     handle = WlanOpenHandle()
     c_back = WlanRegisterNotification(handle, functools.partial(OnWlanNotification, callback), context)
-    global_callbacks.append(c_back)
-    global_handles.append(handle)
+    with _notif_lock:
+        _notif_handles.append(handle)
+        _notif_callbacks.append(c_back)
     return NotificationObject(handle, c_back)
 
 
 def unregisterNotification(notification_object: NotificationObject) -> None:
-    if notification_object.handle in global_handles:
+    """Tear down a notification registration created by :func:`registerNotification`.
+
+    Calls ``WlanRegisterNotification(handle, NULL, ...)`` per the Microsoft
+    docs so the OS knows to stop firing callbacks, then closes the handle.
+    Idempotent: calling twice on the same object is harmless.
+    """
+    with _notif_lock:
+        try:
+            _notif_handles.remove(notification_object.handle)
+        except ValueError:
+            return  # already torn down
+        try:
+            _notif_callbacks.remove(notification_object.callback)
+        except ValueError:
+            pass
+
+    # Drop OS-side registration first so callbacks stop firing, then close
+    # the handle. Order matters: closing the handle first risks a callback
+    # arriving against a dead handle.
+    try:
+        WlanRegisterNotification(notification_object.handle, None, None)
+    except Win32WifiError as e:
+        logger.warning("Failed to deregister WLAN notification: %s", e)
+    try:
         WlanCloseHandle(notification_object.handle)
-        global_handles.remove(notification_object.handle)
-    if notification_object.callback in global_callbacks:
-        global_callbacks.remove(notification_object.callback)
+    except Win32WifiError as e:
+        logger.warning("Failed to close WLAN handle during unregister: %s", e)
 
 
 def unregisterAllNotifications() -> None:
-    for handle in global_handles:
+    """Tear down every outstanding notification registered with this module."""
+    with _notif_lock:
+        handles = list(_notif_handles)
+        _notif_handles.clear()
+        _notif_callbacks.clear()
+
+    for handle in handles:
+        try:
+            WlanRegisterNotification(handle, None, None)
+        except Win32WifiError as e:
+            logger.warning("Failed to deregister WLAN notification: %s", e)
         try:
             WlanCloseHandle(handle)
-        except Exception:
-            pass
-    global_handles.clear()
-    global_callbacks.clear()
+        except Win32WifiError as e:
+            logger.warning("Failed to close WLAN handle: %s", e)
